@@ -109,18 +109,18 @@
 
         <div class="max-w-4xl mx-auto">
             <!-- 进度指示器 -->
-            <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
+            <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6 hidden md:block">
                 <div class="progress-container flex items-center justify-center">
                     <div id="step1-indicator" class="progress-step flex items-center">
                         <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">1</div>
                         <span class="step-title font-medium text-gray-800 ml-2">添加人员</span>
                     </div>
-                    <div class="progress-line w-8 h-1 bg-gray-300 hidden md:block" id="progress1"></div>
+                    <div class="progress-line w-8 h-1 bg-gray-300" id="progress1"></div>
                     <div id="step2-indicator" class="progress-step flex items-center">
                         <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">2</div>
                         <span class="step-title font-medium text-gray-500 ml-2">记录费用</span>
                     </div>
-                    <div class="progress-line w-8 h-1 bg-gray-300 hidden md:block" id="progress2"></div>
+                    <div class="progress-line w-8 h-1 bg-gray-300" id="progress2"></div>
                     <div id="step3-indicator" class="progress-step flex items-center">
                         <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold">3</div>
                         <span class="step-title font-medium text-gray-500 ml-2">计算结果</span>
@@ -134,7 +134,7 @@
                     <div class="flex justify-between items-center">
                         <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
                             <i class="fas fa-users text-blue-600 mr-2"></i>
-                            <span class="hidden sm:inline">第一步：</span>添加参与人员
+                            第一步：添加参与人员
                         </h2>
                         <div class="flex items-center">
                             <span id="step1-summary" class="text-xs md:text-sm text-gray-600 mr-2 md:mr-3"></span>
@@ -170,7 +170,7 @@
                         <button onclick="completeStep(1)" id="step1-next" 
                                 class="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base" 
                                 disabled>
-                            <span class="hidden sm:inline">下一步：</span>记录费用 <i class="fas fa-arrow-right ml-1"></i>
+                            下一步：记录费用 <i class="fas fa-arrow-right ml-1"></i>
                         </button>
                     </div>
                 </div>
@@ -182,7 +182,7 @@
                     <div class="flex justify-between items-center">
                         <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
                             <i class="fas fa-receipt text-green-600 mr-2"></i>
-                            <span class="hidden sm:inline">第二步：</span>记录费用支出
+                            第二步：记录费用支出
                         </h2>
                         <div class="flex items-center">
                             <span id="step2-summary" class="text-xs md:text-sm text-gray-600 mr-2 md:mr-3"></span>
@@ -216,7 +216,7 @@
                         <button onclick="completeStep(2)" id="step2-next" 
                                 class="bg-green-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base" 
                                 disabled>
-                            <span class="hidden sm:inline">下一步：</span>计算结果 <i class="fas fa-arrow-right ml-1"></i>
+                            下一步：计算结果 <i class="fas fa-arrow-right ml-1"></i>
                         </button>
                     </div>
                 </div>
@@ -228,7 +228,7 @@
                     <div class="flex justify-between items-center">
                         <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
                             <i class="fas fa-calculator text-purple-600 mr-2"></i>
-                            <span class="hidden sm:inline">第三步：</span>设置转账模式并计算
+                            第三步：设置转账模式并计算
                         </h2>
                         <div class="flex items-center">
                             <span id="step3-summary" class="text-xs md:text-sm text-gray-600 mr-2 md:mr-3"></span>
