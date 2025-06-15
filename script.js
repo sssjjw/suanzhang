@@ -965,12 +965,16 @@ function checkStepCompletion() {
     }
 }
 
-// 隐藏彩蛋：三击标题加载示例
+// 隐藏彩蛋：三击标题加载示例，五击副标题存储管理
 let titleClickCount = 0;
 let titleClickTimer = null;
+let subtitleClickCount = 0;
+let subtitleClickTimer = null;
 
 function initTitleEasterEgg() {
+    // 主标题彩蛋：三击加载示例
     const titleElement = document.getElementById('mainTitle');
+    titleElement.title = '💡 连续点击3次可加载示例数据';
     titleElement.addEventListener('click', function() {
         titleClickCount++;
         
@@ -990,14 +994,35 @@ function initTitleEasterEgg() {
             clearTimeout(titleClickTimer);
             loadExampleEasterEgg();
         }
-        
-        // 五击触发存储管理
-        if (titleClickCount === 5) {
-            titleClickCount = 0;
-            clearTimeout(titleClickTimer);
-            showStorageManagerEasterEgg();
-        }
     });
+    
+    // 副标题彩蛋：五击存储管理
+    const subtitleElement = document.querySelector('p.text-sm.md\\:text-base.text-gray-600.mb-2');
+    if (subtitleElement) {
+        subtitleElement.style.cursor = 'pointer';
+        subtitleElement.style.userSelect = 'none';
+        subtitleElement.title = '💡 连续点击5次可打开存储管理器';
+        subtitleElement.addEventListener('click', function() {
+            subtitleClickCount++;
+            
+            // 清除之前的定时器
+            if (subtitleClickTimer) {
+                clearTimeout(subtitleClickTimer);
+            }
+            
+            // 设置2秒后重置计数器
+            subtitleClickTimer = setTimeout(() => {
+                subtitleClickCount = 0;
+            }, 2000);
+            
+            // 五击触发存储管理
+            if (subtitleClickCount === 5) {
+                subtitleClickCount = 0;
+                clearTimeout(subtitleClickTimer);
+                showStorageManagerEasterEgg();
+            }
+        });
+    }
 }
 
 function loadExampleEasterEgg() {
@@ -1047,7 +1072,7 @@ function showStorageManagerEasterEgg() {
     }, 300);
     
     setTimeout(() => {
-        alert('🔍 隐藏功能已激活！\n\n存储管理器即将启动...\n\n💡 小贴士：点击3次=示例数据，点击5次=存储管理');
+        alert('🔍 隐藏功能已激活！\n\n存储管理器即将启动...\n\n💡 小贴士：\n• 点击主标题3次 = 加载示例数据\n• 点击副标题5次 = 打开存储管理');
         showStorageManager();
     }, 100);
 }
