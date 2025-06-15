@@ -139,23 +139,42 @@ function updatePersonList() {
     const personList = document.getElementById('personList');
     personList.innerHTML = '';
     
+    // 按家庭分组并重新排序家庭序号
+    const familyGroups = {};
     persons.forEach(person => {
-        const familyMembers = persons.filter(p => p.familyGroup === person.familyGroup);
-        const familyInfo = familyMembers.length > 1 ? 
-            `（家庭${person.familyGroup}：${familyMembers.map(p => p.name).join('、')}）` : '';
+        if (!familyGroups[person.familyGroup]) {
+            familyGroups[person.familyGroup] = [];
+        }
+        familyGroups[person.familyGroup].push(person);
+    });
+    
+    // 获取所有家庭组并按原家庭编号排序
+    const sortedFamilyKeys = Object.keys(familyGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    // 为每个人添加序号显示
+    let personIndex = 1;
+    sortedFamilyKeys.forEach((originalFamilyGroup, familyIndex) => {
+        const newFamilyNumber = familyIndex + 1;
+        const familyMembers = familyGroups[originalFamilyGroup];
         
-        personList.innerHTML += `
-            <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
-                <div>
-                    <span class="font-medium">${person.name}</span>
-                    <div class="text-sm text-gray-600">${familyInfo}</div>
+        familyMembers.forEach(person => {
+            const familyInfo = familyMembers.length > 1 ? 
+                `（家庭${newFamilyNumber}：${familyMembers.map(p => p.name).join('、')}）` : '';
+            
+            personList.innerHTML += `
+                <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <span class="font-medium">${personIndex}. ${person.name}</span>
+                        <div class="text-sm text-gray-600">${familyInfo}</div>
+                    </div>
+                    <button onclick="removePerson(${person.id})" 
+                            class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
-                <button onclick="removePerson(${person.id})" 
-                        class="text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
+            `;
+            personIndex++;
+        });
     });
 }
 
@@ -174,11 +193,17 @@ function updatePayerSelect() {
         familyGroups[person.familyGroup].push(person);
     });
     
-    Object.values(familyGroups).forEach(family => {
+    // 按家庭编号排序并重新编号
+    const sortedFamilyKeys = Object.keys(familyGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    sortedFamilyKeys.forEach((originalFamilyGroup, familyIndex) => {
+        const family = familyGroups[originalFamilyGroup];
+        const newFamilyNumber = familyIndex + 1;
+        
         if (family.length === 1) {
             payerSelect.innerHTML += `<option value="${family[0].id}">${family[0].name}</option>`;
         } else {
-            payerSelect.innerHTML += `<option value="${family[0].id}">${family.map(p => p.name).join('、')}（家庭）</option>`;
+            payerSelect.innerHTML += `<option value="${family[0].id}">${family.map(p => p.name).join('、')}（家庭${newFamilyNumber}）</option>`;
         }
     });
     
@@ -204,11 +229,17 @@ function updateHubPersonSelect() {
         familyGroups[person.familyGroup].push(person);
     });
     
-    Object.values(familyGroups).forEach(family => {
+    // 按家庭编号排序并重新编号
+    const sortedFamilyKeys = Object.keys(familyGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    sortedFamilyKeys.forEach((originalFamilyGroup, familyIndex) => {
+        const family = familyGroups[originalFamilyGroup];
+        const newFamilyNumber = familyIndex + 1;
+        
         if (family.length === 1) {
             hubPersonSelect.innerHTML += `<option value="${family[0].id}">${family[0].name}</option>`;
         } else {
-            hubPersonSelect.innerHTML += `<option value="${family[0].id}">${family.map(p => p.name).join('、')}（家庭代表）</option>`;
+            hubPersonSelect.innerHTML += `<option value="${family[0].id}">${family.map(p => p.name).join('、')}（家庭${newFamilyNumber}代表）</option>`;
         }
     });
     
@@ -280,11 +311,26 @@ function updateExpenseList() {
     
     expenseList.innerHTML = '';
     
+    // 构建家庭分组映射以获取正确的家庭序号
+    const familyGroups = {};
+    persons.forEach(person => {
+        if (!familyGroups[person.familyGroup]) {
+            familyGroups[person.familyGroup] = [];
+        }
+        familyGroups[person.familyGroup].push(person);
+    });
+    const sortedFamilyKeys = Object.keys(familyGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    const familyNumberMap = {};
+    sortedFamilyKeys.forEach((originalFamilyGroup, index) => {
+        familyNumberMap[originalFamilyGroup] = index + 1;
+    });
+    
     expenses.forEach(expense => {
         const payer = persons.find(p => p.id === expense.payerId);
         const familyMembers = persons.filter(p => p.familyGroup === payer.familyGroup);
+        const familyNumber = familyNumberMap[payer.familyGroup];
         const payerName = familyMembers.length > 1 ? 
-            familyMembers.map(p => p.name).join('、') : payer.name;
+            `${familyMembers.map(p => p.name).join('、')}（家庭${familyNumber}）` : payer.name;
         
         expenseList.innerHTML += `
             <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
@@ -566,19 +612,36 @@ function displayResults(totalAmount, perPersonAmount, settlements, transfers, tr
         }
     }
     
-    // 个人明细
+    // 个人明细 - 添加家庭序号
     const personalDetails = document.getElementById('personalDetails');
+    
+    // 构建家庭序号映射
+    const familyGroups = {};
+    settlements.forEach(settlement => {
+        const familyGroup = settlement.family.members[0].familyGroup;
+        if (!familyGroups[familyGroup]) {
+            familyGroups[familyGroup] = settlement;
+        }
+    });
+    const sortedFamilyKeys = Object.keys(familyGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    const familyNumberMap = {};
+    sortedFamilyKeys.forEach((originalFamilyGroup, index) => {
+        familyNumberMap[originalFamilyGroup] = index + 1;
+    });
+    
     personalDetails.innerHTML = settlements.map(settlement => {
         const statusClass = settlement.netAmount > 0.01 ? 'text-green-600' : 
                            settlement.netAmount < -0.01 ? 'text-red-600' : 'text-gray-600';
         const statusText = settlement.netAmount > 0.01 ? '应收回' :
                           settlement.netAmount < -0.01 ? '应支付' : '已平衡';
         const amount = Math.abs(settlement.netAmount);
+        const familyNumber = familyNumberMap[settlement.family.members[0].familyGroup];
+        const familyLabel = settlement.family.members.length > 1 ? `家庭${familyNumber}：` : '';
         
         return `
             <div class="bg-white p-3 rounded-lg shadow-sm">
                 <div class="font-medium text-gray-800 mb-1">
-                    ${settlement.family.members.map(p => p.name).join('、')}
+                    ${familyLabel}${settlement.family.members.map(p => p.name).join('、')}
                 </div>
                 <div class="text-sm text-gray-600 mb-2">
                     已付: €${settlement.family.totalPaid.toFixed(2)} | 
