@@ -696,6 +696,7 @@ function toggleStep(stepNumber) {
     const step = document.getElementById(`step${stepNumber}`);
     const content = document.getElementById(`step${stepNumber}-content`);
     const arrow = document.getElementById(`step${stepNumber}-arrow`);
+    const nextButton = document.getElementById(`step${stepNumber}-next-wrapper`);
     
     if (step.classList.contains('collapsed')) {
         // 展开步骤
@@ -703,12 +704,20 @@ function toggleStep(stepNumber) {
         content.classList.remove('hidden');
         arrow.classList.remove('fa-chevron-down');
         arrow.classList.add('fa-chevron-up');
+        // 显示下一步按钮（如果存在）
+        if (nextButton) {
+            nextButton.classList.remove('hidden');
+        }
     } else {
         // 折叠步骤
         step.classList.add('collapsed');
         content.classList.add('hidden');
         arrow.classList.remove('fa-chevron-up');
         arrow.classList.add('fa-chevron-down');
+        // 隐藏下一步按钮（如果存在）
+        if (nextButton) {
+            nextButton.classList.add('hidden');
+        }
     }
 }
 
@@ -734,6 +743,12 @@ function completeStep(stepNumber) {
         document.getElementById(`step${stepNumber + 1}-content`).classList.remove('hidden');
         document.getElementById(`step${stepNumber + 1}-arrow`).classList.remove('fa-chevron-down');
         document.getElementById(`step${stepNumber + 1}-arrow`).classList.add('fa-chevron-up');
+        
+        // 显示下一步的按钮
+        const nextStepButton = document.getElementById(`step${stepNumber + 1}-next-wrapper`);
+        if (nextStepButton) {
+            nextStepButton.classList.remove('hidden');
+        }
         
         // 更新下一步指示器
         updateStepIndicator(stepNumber + 1, 'active');
@@ -966,11 +981,17 @@ function clearAllData() {
         const step1 = document.getElementById('step1');
         const step1Content = document.getElementById('step1-content');
         const step1Arrow = document.getElementById('step1-arrow');
+        const step1NextButton = document.getElementById('step1-next-wrapper');
         
         step1.classList.add('step-active');
         step1Content.classList.remove('hidden');
         step1Arrow.classList.remove('fa-chevron-down');
         step1Arrow.classList.add('fa-chevron-up');
+        
+        // 显示第一步的按钮
+        if (step1NextButton) {
+            step1NextButton.classList.remove('hidden');
+        }
         
         // 重置进度指示器
         updateStepIndicator(1, 'active');
