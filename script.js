@@ -880,28 +880,54 @@ function shareData() {
 function clearAllData() {
     if (confirm('确定要清空所有数据吗？这个操作无法撤销。')) {
         clearStoredData();
-        // 重置到第一步
-        document.querySelectorAll('[id^="step"]').forEach(step => {
-            step.classList.remove('step-completed', 'step-active');
-            step.classList.add('collapsed');
-        });
-        document.getElementById('step1').classList.remove('collapsed');
-        document.getElementById('step1').classList.add('step-active');
-        document.getElementById('step1-content').classList.remove('hidden');
-        document.getElementById('step1-arrow').classList.remove('fa-chevron-down');
-        document.getElementById('step1-arrow').classList.add('fa-chevron-up');
+        
+        // 重置所有步骤状态
+        for(let i = 1; i <= 3; i++) {
+            const step = document.getElementById(`step${i}`);
+            const content = document.getElementById(`step${i}-content`);
+            const arrow = document.getElementById(`step${i}-arrow`);
+            
+            // 清除所有状态类
+            step.classList.remove('step-completed', 'step-active', 'collapsed');
+            content.classList.add('hidden');
+            arrow.classList.remove('fa-chevron-up');
+            arrow.classList.add('fa-chevron-down');
+            
+            // 第一步除外
+            if (i !== 1) {
+                step.classList.add('collapsed');
+            }
+        }
+        
+        // 设置第一步为活动状态
+        const step1 = document.getElementById('step1');
+        const step1Content = document.getElementById('step1-content');
+        const step1Arrow = document.getElementById('step1-arrow');
+        
+        step1.classList.add('step-active');
+        step1Content.classList.remove('hidden');
+        step1Arrow.classList.remove('fa-chevron-down');
+        step1Arrow.classList.add('fa-chevron-up');
         
         // 重置进度指示器
         updateStepIndicator(1, 'active');
         for(let i = 2; i <= 3; i++) {
             const indicator = document.getElementById(`step${i}-indicator`);
-            const circle = indicator.querySelector('div');
-            const text = indicator.querySelector('span');
-            circle.classList.remove('bg-blue-600', 'bg-green-600', 'text-white');
-            circle.classList.add('bg-gray-300', 'text-gray-600');
-            circle.innerHTML = i;
-            text.classList.remove('text-gray-800', 'text-green-600');
-            text.classList.add('text-gray-500');
+            if (indicator) {
+                const circle = indicator.querySelector('div');
+                const text = indicator.querySelector('span');
+                circle.classList.remove('bg-blue-600', 'bg-green-600', 'text-white');
+                circle.classList.add('bg-gray-300', 'text-gray-600');
+                circle.innerHTML = i;
+                text.classList.remove('text-gray-800', 'text-green-600');
+                text.classList.add('text-gray-500');
+                
+                // 重置进度条
+                const progress = document.getElementById(`progress${i-1}`);
+                if (progress) {
+                    progress.classList.remove('progress-active');
+                }
+            }
         }
         
         currentStep = 1;

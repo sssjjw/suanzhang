@@ -88,6 +88,32 @@
                 padding: 0.75rem 1.5rem;
                 font-size: 1rem;
             }
+            
+            /* 移动端输入框优化 */
+            input[type="text"], 
+            input[type="number"], 
+            select {
+                padding: 0.5rem 0.75rem !important;
+                font-size: 16px !important; /* 防止iOS缩放 */
+                line-height: 1.2 !important;
+                min-height: auto !important;
+            }
+            
+            /* 添加人员输入框特别优化 */
+            #personName {
+                height: 2.5rem !important;
+            }
+            
+            /* 费用输入框优化 */
+            #expenseAmount, #expenseDesc {
+                height: 2.5rem !important;
+            }
+            
+            /* 下拉框优化 */
+            #payerSelect, #transferMode, #hubPersonSelect {
+                height: 2.5rem !important;
+                padding: 0.5rem !important;
+            }
         }
     </style>
 </head>
