@@ -2,6 +2,43 @@
 let persons = [];
 let expenses = [];
 let currentStep = 1;
+let sessionId = null; // 当前会话ID
+
+// 会话管理
+function generateSessionId() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function getStorageKey() {
+    return `expenseSplitterData_${sessionId}`;
+}
+
+function initializeSession() {
+    // 从URL参数获取会话ID
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSessionId = urlParams.get('session');
+    
+    if (urlSessionId) {
+        sessionId = urlSessionId;
+        // 尝试加载URL中的数据
+        if (!loadDataFromURL()) {
+            // 如果URL中没有数据，尝试从localStorage加载
+            loadDataFromStorage();
+        }
+    } else {
+        // 生成新的会话ID
+        sessionId = generateSessionId();
+        // 更新URL但不刷新页面
+        const newUrl = `${window.location.pathname}?session=${sessionId}`;
+        window.history.replaceState({}, '', newUrl);
+        // 清空数据开始新会话
+        persons = [];
+        expenses = [];
+        currentStep = 1;
+    }
+    
+    updateAllUI();
+}
 
 // 数据持久化功能
 function saveDataToStorage() {
@@ -11,7 +48,7 @@ function saveDataToStorage() {
         currentStep: currentStep,
         timestamp: new Date().toISOString()
     };
-    localStorage.setItem('expenseSplitterData', JSON.stringify(data));
+    localStorage.setItem(getStorageKey(), JSON.stringify(data));
     updateDataStatus();
 }
 
@@ -29,7 +66,7 @@ function updateDataStatus() {
 
 function loadDataFromStorage() {
     try {
-        const savedData = localStorage.getItem('expenseSplitterData');
+        const savedData = localStorage.getItem(getStorageKey());
         if (savedData) {
             const data = JSON.parse(savedData);
             persons = data.persons || [];
@@ -44,7 +81,7 @@ function loadDataFromStorage() {
 }
 
 function clearStoredData() {
-    localStorage.removeItem('expenseSplitterData');
+    localStorage.removeItem(getStorageKey());
     persons = [];
     expenses = [];
     currentStep = 1;
@@ -58,7 +95,7 @@ function generateShareableLink() {
         expenses: expenses
     };
     const encodedData = btoa(encodeURIComponent(JSON.stringify(data)));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?session=${sessionId}&data=${encodedData}`;
     return shareUrl;
 }
 
@@ -887,28 +924,21 @@ function loadExampleEasterEgg() {
 
 // 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 尝试从URL或localStorage加载数据
-    let dataLoaded = loadDataFromURL();
-    if (!dataLoaded) {
-        dataLoaded = loadDataFromStorage();
-    }
+    // 初始化会话
+    initializeSession();
     
-    if (dataLoaded) {
-        updateAllUI();
-        // 如果有数据，检查应该在哪一步
-        if (persons.length > 0 && expenses.length > 0) {
-            // 如果已经有人员和费用，直接到第三步
-            completeStep(1);
-            completeStep(2);
-        } else if (persons.length > 0) {
-            // 如果只有人员，到第二步
-            completeStep(1);
-        }
+    // 检查应该在哪一步
+    if (persons.length > 0 && expenses.length > 0) {
+        // 如果已经有人员和费用，直接到第三步
+        completeStep(1);
+        completeStep(2);
+    } else if (persons.length > 0) {
+        // 如果只有人员，到第二步
+        completeStep(1);
     } else {
         // 初始化第一步为活动状态
         document.getElementById('step1').classList.add('step-active');
         updateStepIndicator(1, 'active');
-        updateDataStatus();
     }
     
     // 初始化标题彩蛋功能
@@ -927,6 +957,89 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// 创建新会话
+function createNewSession() {
+    if (confirm('确定要创建新的计算任务吗？\n\n这将开启一个全新的计算会话，当前数据仍会保留在原链接中。')) {
+        // 生成新的会话ID
+        sessionId = generateSessionId();
+        
+        // 清空当前数据
+        persons = [];
+        expenses = [];
+        currentStep = 1;
+        
+        // 更新URL到新会话
+        const newUrl = `${window.location.pathname}?session=${sessionId}`;
+        window.history.pushState({}, '', newUrl);
+        
+        // 重置所有步骤状态
+        for(let i = 1; i <= 3; i++) {
+            const step = document.getElementById(`step${i}`);
+            const content = document.getElementById(`step${i}-content`);
+            const arrow = document.getElementById(`step${i}-arrow`);
+            const nextButton = document.getElementById(`step${i}-next-wrapper`);
+            
+            // 清除所有状态类
+            step.classList.remove('step-completed', 'step-active', 'collapsed');
+            content.classList.add('hidden');
+            arrow.classList.remove('fa-chevron-up');
+            arrow.classList.add('fa-chevron-down');
+            
+            // 隐藏下一步按钮
+            if (nextButton) {
+                nextButton.classList.add('hidden');
+            }
+            
+            // 第一步除外
+            if (i !== 1) {
+                step.classList.add('collapsed');
+            }
+        }
+        
+        // 设置第一步为活动状态
+        const step1 = document.getElementById('step1');
+        const step1Content = document.getElementById('step1-content');
+        const step1Arrow = document.getElementById('step1-arrow');
+        const step1NextButton = document.getElementById('step1-next-wrapper');
+        
+        step1.classList.add('step-active');
+        step1Content.classList.remove('hidden');
+        step1Arrow.classList.remove('fa-chevron-down');
+        step1Arrow.classList.add('fa-chevron-up');
+        
+        // 显示第一步的按钮
+        if (step1NextButton) {
+            step1NextButton.classList.remove('hidden');
+        }
+        
+        // 重置进度指示器
+        updateStepIndicator(1, 'active');
+        for(let i = 2; i <= 3; i++) {
+            const indicator = document.getElementById(`step${i}-indicator`);
+            if (indicator) {
+                const circle = indicator.querySelector('div');
+                const text = indicator.querySelector('span');
+                circle.classList.remove('bg-blue-600', 'bg-green-600', 'text-white');
+                circle.classList.add('bg-gray-300', 'text-gray-600');
+                circle.innerHTML = i;
+                text.classList.remove('text-gray-800', 'text-green-600');
+                text.classList.add('text-gray-500');
+                
+                // 重置进度条
+                const progress = document.getElementById(`progress${i-1}`);
+                if (progress) {
+                    progress.classList.remove('progress-active');
+                }
+            }
+        }
+        
+        // 更新UI
+        updateAllUI();
+        
+        alert('🎉 新的计算任务已创建！\n\n现在您可以开始添加新的参与人员和费用记录。每个计算任务都有独立的数据空间，互不干扰。');
+    }
+}
 
 // 分享和数据管理功能
 function shareData() {
@@ -947,7 +1060,7 @@ function shareData() {
     } else {
         // 复制到剪贴板
         navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('分享链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到已填写的数据，并可以继续编辑。');
+            alert('分享链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到已填写的数据，并可以继续编辑。\n\n💡 每次分享都会创建独立的数据空间，多人可同时使用不同的计算任务。');
         }).catch(() => {
             // 降级方案：显示链接
             prompt('请复制下方链接分享给朋友：', shareUrl);
