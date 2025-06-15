@@ -37,7 +37,112 @@ function initializeSession() {
         currentStep = 1;
     }
     
+    // 检查存储使用情况
+    checkStorageUsage();
+    
     updateAllUI();
+}
+
+// 存储管理和清理功能
+function checkStorageUsage() {
+    try {
+        const allKeys = Object.keys(localStorage);
+        const appKeys = allKeys.filter(key => key.startsWith('expenseSplitterData_'));
+        
+        // 计算总存储大小
+        let totalSize = 0;
+        appKeys.forEach(key => {
+            totalSize += localStorage.getItem(key).length;
+        });
+        
+        // 转换为KB
+        const sizeInKB = Math.round(totalSize / 1024);
+        
+        console.log(`📊 存储状态: ${appKeys.length}个会话, 占用${sizeInKB}KB`);
+        
+        // 如果存储过多，提示清理
+        if (appKeys.length > 20) {
+            console.warn('⚠️ 检测到较多会话数据，建议清理旧数据');
+            // 可以在合适时机提醒用户清理
+            if (appKeys.length > 50) {
+                setTimeout(() => {
+                    if (confirm('检测到存储了很多计算会话（' + appKeys.length + '个）\n\n是否要清理7天前的旧数据？这不会影响当前正在使用的计算任务。')) {
+                        cleanOldSessions();
+                    }
+                }, 2000);
+            }
+        }
+        
+        // 检查localStorage剩余空间
+        checkLocalStorageQuota();
+        
+    } catch (error) {
+        console.error('存储检查失败:', error);
+    }
+}
+
+function cleanOldSessions() {
+    try {
+        const allKeys = Object.keys(localStorage);
+        const appKeys = allKeys.filter(key => key.startsWith('expenseSplitterData_'));
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        
+        let cleanedCount = 0;
+        
+        appKeys.forEach(key => {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                const sessionTime = new Date(data.timestamp).getTime();
+                
+                // 如果数据超过7天且不是当前会话，则删除
+                if (sessionTime < sevenDaysAgo && !key.includes(sessionId)) {
+                    localStorage.removeItem(key);
+                    cleanedCount++;
+                }
+            } catch (error) {
+                // 如果数据格式错误，也删除
+                if (!key.includes(sessionId)) {
+                    localStorage.removeItem(key);
+                    cleanedCount++;
+                }
+            }
+        });
+        
+        alert(`✅ 清理完成！\n\n删除了${cleanedCount}个旧的计算会话数据\n当前会话和最近的数据已保留`);
+        
+    } catch (error) {
+        console.error('清理旧数据失败:', error);
+    }
+}
+
+function checkLocalStorageQuota() {
+    try {
+        // 估算localStorage使用情况
+        let totalSize = 0;
+        for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                totalSize += localStorage[key].length + key.length;
+            }
+        }
+        
+        const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+        
+        if (totalSize > 3 * 1024 * 1024) { // 超过3MB
+            console.warn(`⚠️ localStorage使用量较高: ${sizeInMB}MB`);
+        }
+        
+        // 简单的容量测试
+        const testKey = 'storageTest_' + Date.now();
+        const testData = 'x'.repeat(1024); // 1KB test data
+        
+        localStorage.setItem(testKey, testData);
+        localStorage.removeItem(testKey);
+        
+    } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+            alert('⚠️ 浏览器存储空间不足！\n\n建议清理一些数据或使用新的浏览器标签页');
+        }
+    }
 }
 
 // 数据持久化功能
@@ -1167,6 +1272,54 @@ function clearAllData() {
         
         currentStep = 1;
         alert('数据已清空！');
+    }
+}
+
+// 存储管理界面
+function showStorageManager() {
+    try {
+        const allKeys = Object.keys(localStorage);
+        const appKeys = allKeys.filter(key => key.startsWith('expenseSplitterData_'));
+        
+        // 计算总存储大小
+        let totalSize = 0;
+        appKeys.forEach(key => {
+            totalSize += localStorage.getItem(key).length;
+        });
+        
+        const sizeInKB = Math.round(totalSize / 1024);
+        
+        // 计算整个localStorage的使用情况
+        let allSize = 0;
+        for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                allSize += localStorage[key].length + key.length;
+            }
+        }
+        const allSizeInMB = (allSize / (1024 * 1024)).toFixed(2);
+        
+        const message = `📊 存储使用情况：
+
+🔢 计算会话数量: ${appKeys.length}个
+💾 应用数据大小: ${sizeInKB}KB
+🗄️ 浏览器总存储: ${allSizeInMB}MB
+
+${appKeys.length > 10 ? '⚠️ 建议定期清理旧数据以保持最佳性能' : '✅ 存储使用情况良好'}
+
+选择操作：
+✅ 确定 - 关闭此对话框
+❌ 取消 - 清理7天前的旧数据`;
+
+        if (confirm(message)) {
+            // 用户选择确定，关闭对话框
+            return;
+        } else {
+            // 用户选择取消，执行清理
+            cleanOldSessions();
+        }
+        
+    } catch (error) {
+        alert('获取存储信息失败: ' + error.message);
     }
 }
 
