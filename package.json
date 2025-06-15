@@ -1,0 +1,23 @@
+{
+  "name": "smart-expense-splitter",
+  "version": "1.0.0",
+  "description": "智能费用均摊计算器 - 聚餐、旅行、活动费用一键均摊，智能优化转账次数",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "费用均摊",
+    "聚餐分账",
+    "旅行费用",
+    "转账优化",
+    "AA收款"
+  ],
+  "author": "Sunway",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "费用均摊计算器"
+  }
+} 

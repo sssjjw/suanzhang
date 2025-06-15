@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能费用均摊计算器 | 聚餐旅行费用分摊工具</title>
+    <meta name="description" content="智能费用均摊计算器，支持聚餐、旅行、团建等活动费用分摊。智能优化转账次数，支持家庭分组，一键生成最优转账方案。">
+    <meta name="keywords" content="费用均摊,聚餐分账,旅行费用,转账优化,AA收款,费用分摊,团建费用">
+    <meta name="author" content="智能费用均摊计算器">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="智能费用均摊计算器">
+    <meta property="og:description" content="聚餐、旅行、活动费用一键均摊，智能优化转账次数">
+    <meta property="og:url" content="">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="智能费用均摊计算器">
+    <meta property="twitter:description" content="聚餐、旅行、活动费用一键均摊，智能优化转账次数">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>">
+    
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .collapsed {
+            max-height: 60px;
+            overflow: hidden;
+        }
+        
+        .step-header {
+            transition: background-color 0.2s;
+        }
+        
+        .step-header:hover {
+            background-color: #f8fafc;
+        }
+        
+        .step-completed .step-header {
+            background-color: #f0f9ff;
+        }
+        
+        .progress-active {
+            background-color: #2563eb !important;
+        }
+        
+        .step-active .step-header {
+            background-color: #eff6ff;
+        }
+        
+        @media (max-width: 768px) {
+            .flex.items-center.space-x-4 {
+                flex-direction: column;
+                space-x: 0;
+                gap: 1rem;
+            }
+            
+            .w-8.h-1 {
+                width: 1px;
+                height: 2rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-calculator text-blue-600"></i>
+                智能费用均摊计算器
+            </h1>
+            <p class="text-gray-600">聚餐、旅行、活动费用一键均摊，智能优化转账次数</p>
+            <div class="mt-4">
+                <button onclick="loadExample()" 
+                        class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors">
+                    <i class="fas fa-download mr-1"></i> 加载示例案例
+                </button>
+            </div>
+        </header>
+
+        <div class="max-w-4xl mx-auto">
+            <!-- 进度指示器 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div id="step1-indicator" class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold mr-2">1</div>
+                            <span class="font-medium text-gray-800">添加人员</span>
+                        </div>
+                        <div class="w-8 h-1 bg-gray-300" id="progress1"></div>
+                        <div id="step2-indicator" class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold mr-2">2</div>
+                            <span class="font-medium text-gray-500">记录费用</span>
+                        </div>
+                        <div class="w-8 h-1 bg-gray-300" id="progress2"></div>
+                        <div id="step3-indicator" class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-semibold mr-2">3</div>
+                            <span class="font-medium text-gray-500">计算结果</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第一步：参与人员管理 -->
+            <div id="step1" class="bg-white rounded-lg shadow-lg mb-6 transition-all duration-300">
+                <div class="step-header p-4 border-b cursor-pointer" onclick="toggleStep(1)">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-users text-blue-600 mr-2"></i>
+                            第一步：添加参与人员
+                        </h2>
+                        <div class="flex items-center">
+                            <span id="step1-summary" class="text-sm text-gray-600 mr-3"></span>
+                            <i id="step1-arrow" class="fas fa-chevron-up text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="step1-content" class="p-6">
+                    <div class="mb-4">
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="personName" placeholder="输入姓名" 
+                                   class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <button onclick="addPerson()" 
+                                    class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-plus mr-1"></i> 添加
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="flex items-center text-gray-700">
+                                <input type="checkbox" id="isFamily" class="mr-2">
+                                <span>与上一个人为同一家庭（免内部转账）</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="personList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                        <!-- 动态生成人员列表 -->
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button onclick="completeStep(1)" id="step1-next" 
+                                class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                                disabled>
+                            下一步：记录费用 <i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二步：费用记录 -->
+            <div id="step2" class="bg-white rounded-lg shadow-lg mb-6 transition-all duration-300 collapsed">
+                <div class="step-header p-4 border-b cursor-pointer" onclick="toggleStep(2)">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-receipt text-green-600 mr-2"></i>
+                            第二步：记录费用支出
+                        </h2>
+                        <div class="flex items-center">
+                            <span id="step2-summary" class="text-sm text-gray-600 mr-3"></span>
+                            <i id="step2-arrow" class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="step2-content" class="p-6 hidden">
+                    <div class="mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                            <select id="payerSelect" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="">选择付款人</option>
+                            </select>
+                            <input type="number" id="expenseAmount" placeholder="金额" step="0.01" 
+                                   class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                            <input type="text" id="expenseDesc" placeholder="费用描述（可选）" 
+                                   class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <button onclick="addExpense()" 
+                                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-1"></i> 添加费用
+                        </button>
+                    </div>
+
+                    <div id="expenseList" class="space-y-2 mb-4">
+                        <!-- 动态生成费用列表 -->
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button onclick="completeStep(2)" id="step2-next" 
+                                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                                disabled>
+                            下一步：计算结果 <i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第三步：转账设置和计算结果 -->
+            <div id="step3" class="bg-white rounded-lg shadow-lg mb-6 transition-all duration-300 collapsed">
+                <div class="step-header p-4 border-b cursor-pointer" onclick="toggleStep(3)">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-calculator text-purple-600 mr-2"></i>
+                            第三步：设置转账模式并计算
+                        </h2>
+                        <div class="flex items-center">
+                            <span id="step3-summary" class="text-sm text-gray-600 mr-3"></span>
+                            <i id="step3-arrow" class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="step3-content" class="p-6 hidden">
+                    <!-- 转账设置 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">转账设置</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">转账模式</label>
+                                <select id="transferMode" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="toggleHubSelection()">
+                                    <option value="optimal">最优转账（默认）</option>
+                                    <option value="hub">中介转账（选择一人进行多次转账）</option>
+                                </select>
+                            </div>
+                            
+                            <div id="hubPersonDiv" class="hidden">
+                                <label class="block text-gray-700 font-medium mb-2">选择转账中介人</label>
+                                <select id="hubPersonSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                    <option value="">选择中介人</option>
+                                </select>
+                                <div class="text-sm text-gray-600 mt-1">中介人将负责收集和分发资金</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 计算按钮 -->
+                    <div class="flex justify-center mb-6">
+                        <button onclick="calculateSplit()" 
+                                class="bg-purple-600 text-white px-8 py-4 rounded-lg hover:bg-purple-700 transition-colors text-lg font-semibold">
+                            <i class="fas fa-calculator mr-2"></i> 计算均摊结果
+                        </button>
+                    </div>
+
+                    <!-- 计算结果 -->
+                    <div id="results" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h3 class="font-semibold text-blue-800 mb-2">费用统计</h3>
+                                <div id="expenseStats"></div>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h3 class="font-semibold text-green-800 mb-2">均摊详情</h3>
+                                <div id="splitDetails"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-50 p-4 rounded-lg mb-4">
+                            <h3 class="font-semibold text-yellow-800 mb-3 flex items-center">
+                                <i class="fas fa-exchange-alt mr-2"></i>
+                                优化转账方案
+                            </h3>
+                            <div id="transferPlan" class="space-y-2"></div>
+                        </div>
+
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-gray-800 mb-3">个人收支明细</h3>
+                            <div id="personalDetails" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
