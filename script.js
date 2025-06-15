@@ -16,7 +16,7 @@ function getStorageKey() {
 function initializeSession() {
     // 从URL参数获取会话ID
     const urlParams = new URLSearchParams(window.location.search);
-    const urlSessionId = urlParams.get('session');
+    const urlSessionId = urlParams.get('session') || urlParams.get('s'); // 支持新旧格式
     
     if (urlSessionId) {
         sessionId = urlSessionId;
@@ -29,7 +29,7 @@ function initializeSession() {
         // 生成新的会话ID
         sessionId = generateSessionId();
         // 更新URL但不刷新页面
-        const newUrl = `${window.location.pathname}?session=${sessionId}`;
+        const newUrl = `${window.location.pathname}?s=${sessionId}`;
         window.history.replaceState({}, '', newUrl);
         // 清空数据开始新会话
         persons = [];
@@ -194,20 +194,116 @@ function clearStoredData() {
 }
 
 // 分享功能
-function generateShareableLink() {
-    const data = {
-        persons: persons,
-        expenses: expenses
+// 压缩数据以缩短URL
+function compressDataForSharing() {
+    // 创建简化的数据结构
+    const compactData = {
+        p: persons.map(person => ({
+            i: person.id,
+            n: person.name,
+            f: person.familyGroup
+        })),
+        e: expenses.map(expense => ({
+            i: expense.id,
+            p: expense.payerId,
+            a: expense.amount,
+            d: expense.description
+        }))
     };
-    const encodedData = btoa(encodeURIComponent(JSON.stringify(data)));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?session=${sessionId}&data=${encodedData}`;
+    return compactData;
+}
+
+function decompressSharedData(compactData) {
+    return {
+        persons: compactData.p?.map(p => ({
+            id: p.i,
+            name: p.n,
+            familyGroup: p.f
+        })) || [],
+        expenses: compactData.e?.map(e => ({
+            id: e.i,
+            payerId: e.p,
+            amount: e.a,
+            description: e.d
+        })) || []
+    };
+}
+
+// 简单的字符串压缩函数
+function simpleCompress(str) {
+    // 替换常见的重复字符串
+    return str
+        .replace(/"id":/g, '"i":')
+        .replace(/"name":/g, '"n":')
+        .replace(/"familyGroup":/g, '"f":')
+        .replace(/"payerId":/g, '"p":')
+        .replace(/"amount":/g, '"a":')
+        .replace(/"description":/g, '"d":')
+        .replace(/,"/g, ',"')
+        .replace(/":"/g, '":"');
+}
+
+function simpleDecompress(str) {
+    // 还原压缩的字符串
+    return str
+        .replace(/"i":/g, '"id":')
+        .replace(/"n":/g, '"name":')
+        .replace(/"f":/g, '"familyGroup":')
+        .replace(/"p":/g, '"payerId":')
+        .replace(/"a":/g, '"amount":')
+        .replace(/"d":/g, '"description":');
+}
+
+function generateShareableLink() {
+    const compactData = compressDataForSharing();
+    const jsonStr = JSON.stringify(compactData);
+    const compressedStr = simpleCompress(jsonStr);
+    
+    // 使用URL安全的base64编码
+    const encodedData = btoa(compressedStr)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, ''); // 去掉padding
+    
+    const shareUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${encodedData}`;
     return shareUrl;
 }
 
 function loadDataFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedData = urlParams.get('data');
     
+    // 尝试新格式 (压缩格式)
+    let encodedData = urlParams.get('d');
+    if (encodedData) {
+        try {
+            // 还原URL安全的base64编码
+            let base64Str = encodedData
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            // 添加padding
+            while (base64Str.length % 4) {
+                base64Str += '=';
+            }
+            
+            const compressedStr = atob(base64Str);
+            const decompressedStr = simpleDecompress(compressedStr);
+            const compactData = JSON.parse(decompressedStr);
+            const decodedData = decompressSharedData(compactData);
+            
+            if (decodedData.persons && decodedData.expenses) {
+                persons = decodedData.persons;
+                expenses = decodedData.expenses;
+                updateAllUI();
+                return true;
+            }
+        } catch (error) {
+            console.error('从URL加载压缩数据失败:', error);
+        }
+    }
+    
+    // 尝试旧格式 (兼容性)
+    encodedData = urlParams.get('data');
     if (encodedData) {
         try {
             const decodedData = JSON.parse(decodeURIComponent(atob(encodedData)));
@@ -218,9 +314,10 @@ function loadDataFromURL() {
                 return true;
             }
         } catch (error) {
-            console.error('从URL加载数据失败:', error);
+            console.error('从URL加载旧格式数据失败:', error);
         }
     }
+    
     return false;
 }
 
@@ -1125,7 +1222,7 @@ function createNewSession() {
         currentStep = 1;
         
         // 更新URL到新会话
-        const newUrl = `${window.location.pathname}?session=${sessionId}`;
+        const newUrl = `${window.location.pathname}?s=${sessionId}`;
         window.history.pushState({}, '', newUrl);
         
         // 重置所有步骤状态
