@@ -1050,21 +1050,59 @@ function shareData() {
     
     const shareUrl = generateShareableLink();
     
-    if (navigator.share) {
-        // 移动端原生分享
+    // 检测是否在微信环境中
+    const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+    
+    if (isWeChat) {
+        // 微信环境：直接复制链接，不使用原生分享
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('✅ 分享链接已复制成功！\n\n📱 在微信中分享步骤：\n1. 打开要分享的聊天窗口\n2. 长按输入框粘贴链接\n3. 发送给朋友\n\n💡 朋友打开链接就能看到数据并协作编辑！');
+            }).catch(() => {
+                // 微信中剪贴板API失败时的降级方案
+                showShareDialog(shareUrl);
+            });
+        } else {
+            showShareDialog(shareUrl);
+        }
+    } else if (navigator.share && !isWeChat) {
+        // 非微信环境才使用原生分享
         navigator.share({
             title: '智能费用均摊计算器',
             text: '一起来填写费用信息，智能计算转账方案！',
             url: shareUrl
+        }).catch(() => {
+            // 原生分享失败，降级到复制链接
+            copyToClipboard(shareUrl);
         });
     } else {
-        // 复制到剪贴板
+        // 其他情况：复制到剪贴板
+        copyToClipboard(shareUrl);
+    }
+}
+
+function copyToClipboard(shareUrl) {
+    if (navigator.clipboard) {
         navigator.clipboard.writeText(shareUrl).then(() => {
             alert('分享链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到已填写的数据，并可以继续编辑。\n\n💡 每次分享都会创建独立的数据空间，多人可同时使用不同的计算任务。');
         }).catch(() => {
-            // 降级方案：显示链接
-            prompt('请复制下方链接分享给朋友：', shareUrl);
+            showShareDialog(shareUrl);
         });
+    } else {
+        showShareDialog(shareUrl);
+    }
+}
+
+function showShareDialog(shareUrl) {
+    // 创建一个更友好的分享对话框
+    const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+    const message = isWeChat ? 
+        '📱 请复制下方链接在微信中分享：\n\n(长按链接可选择复制)' : 
+        '请复制下方链接分享给朋友：';
+    
+    const result = prompt(message, shareUrl);
+    if (result) {
+        alert('✅ 链接已准备好分享！\n\n朋友打开链接就能看到数据并一起编辑。');
     }
 }
 
