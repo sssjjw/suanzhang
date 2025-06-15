@@ -990,6 +990,13 @@ function initTitleEasterEgg() {
             clearTimeout(titleClickTimer);
             loadExampleEasterEgg();
         }
+        
+        // 五击触发存储管理
+        if (titleClickCount === 5) {
+            titleClickCount = 0;
+            clearTimeout(titleClickTimer);
+            showStorageManagerEasterEgg();
+        }
     });
 }
 
@@ -1025,6 +1032,24 @@ function loadExampleEasterEgg() {
             alert('🎉 隐藏功能已激活！\n\n已加载8人聚餐示例，快来体验智能费用均摊吧！\n\n💡 小贴士：数据会自动保存，也可以分享给朋友一起填写。');
         }, 100);
     }
+}
+
+function showStorageManagerEasterEgg() {
+    // 添加动画效果
+    const titleElement = document.getElementById('mainTitle');
+    titleElement.style.transform = 'scale(1.05)';
+    titleElement.style.transition = 'transform 0.2s';
+    titleElement.style.color = '#6366f1'; // 变为紫色
+    
+    setTimeout(() => {
+        titleElement.style.transform = 'scale(1)';
+        titleElement.style.color = '';
+    }, 300);
+    
+    setTimeout(() => {
+        alert('🔍 隐藏功能已激活！\n\n存储管理器即将启动...\n\n💡 小贴士：点击3次=示例数据，点击5次=存储管理');
+        showStorageManager();
+    }, 100);
 }
 
 // 页面加载完成后的初始化
@@ -1298,28 +1323,19 @@ function showStorageManager() {
         }
         const allSizeInMB = (allSize / (1024 * 1024)).toFixed(2);
         
-        const message = `📊 存储使用情况：
-
-🔢 计算会话数量: ${appKeys.length}个
-💾 应用数据大小: ${sizeInKB}KB
-🗄️ 浏览器总存储: ${allSizeInMB}MB
-
-${appKeys.length > 10 ? '⚠️ 建议定期清理旧数据以保持最佳性能' : '✅ 存储使用情况良好'}
-
-选择操作：
-✅ 确定 - 关闭此对话框
-❌ 取消 - 清理7天前的旧数据`;
+        const statusIcon = appKeys.length > 10 ? '⚠️' : '✅';
+        const statusText = appKeys.length > 10 ? '建议定期清理旧数据以保持最佳性能' : '存储使用情况良好';
+        
+        const message = `📊 存储管理器\n\n🔢 计算会话数量: ${appKeys.length}个\n💾 应用数据大小: ${sizeInKB}KB\n🗄️ 浏览器总存储: ${allSizeInMB}MB\n\n${statusIcon} ${statusText}\n\n是否清理7天前的旧数据？\n(当前正在使用的会话不会被删除)`;
 
         if (confirm(message)) {
-            // 用户选择确定，关闭对话框
-            return;
-        } else {
-            // 用户选择取消，执行清理
+            // 用户选择确定，执行清理
             cleanOldSessions();
         }
         
     } catch (error) {
-        alert('获取存储信息失败: ' + error.message);
+        alert('🚫 获取存储信息失败: ' + error.message);
+        console.error('Storage manager error:', error);
     }
 }
 
