@@ -3,6 +3,93 @@ let persons = [];
 let expenses = [];
 let currentStep = 1;
 
+// 数据持久化功能
+function saveDataToStorage() {
+    const data = {
+        persons: persons,
+        expenses: expenses,
+        currentStep: currentStep,
+        timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('expenseSplitterData', JSON.stringify(data));
+    updateDataStatus();
+}
+
+function updateDataStatus() {
+    const statusElement = document.getElementById('dataStatus');
+    if (persons.length > 0 || expenses.length > 0) {
+        const timestamp = new Date().toLocaleTimeString('zh-CN');
+        statusElement.innerHTML = `<i class="fas fa-save mr-1"></i>数据已自动保存 (${timestamp})`;
+        statusElement.className = 'text-xs text-green-600 mb-4';
+    } else {
+        statusElement.innerHTML = `<i class="fas fa-info-circle mr-1"></i>开始添加数据，将自动保存到本地`;
+        statusElement.className = 'text-xs text-gray-500 mb-4';
+    }
+}
+
+function loadDataFromStorage() {
+    try {
+        const savedData = localStorage.getItem('expenseSplitterData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            persons = data.persons || [];
+            expenses = data.expenses || [];
+            currentStep = data.currentStep || 1;
+            return true;
+        }
+    } catch (error) {
+        console.error('加载数据失败:', error);
+    }
+    return false;
+}
+
+function clearStoredData() {
+    localStorage.removeItem('expenseSplitterData');
+    persons = [];
+    expenses = [];
+    currentStep = 1;
+    updateAllUI();
+}
+
+// 分享功能
+function generateShareableLink() {
+    const data = {
+        persons: persons,
+        expenses: expenses
+    };
+    const encodedData = btoa(encodeURIComponent(JSON.stringify(data)));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
+    return shareUrl;
+}
+
+function loadDataFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const encodedData = urlParams.get('data');
+    
+    if (encodedData) {
+        try {
+            const decodedData = JSON.parse(decodeURIComponent(atob(encodedData)));
+            if (decodedData.persons && decodedData.expenses) {
+                persons = decodedData.persons;
+                expenses = decodedData.expenses;
+                updateAllUI();
+                return true;
+            }
+        } catch (error) {
+            console.error('从URL加载数据失败:', error);
+        }
+    }
+    return false;
+}
+
+function updateAllUI() {
+    updatePersonList();
+    updatePayerSelect();
+    updateExpenseList();
+    updateStepSummary();
+    updateDataStatus();
+}
+
 // 人员管理
 function addPerson() {
     const nameInput = document.getElementById('personName');
@@ -35,6 +122,7 @@ function addPerson() {
     updatePersonList();
     updatePayerSelect();
     updateStepSummary();
+    saveDataToStorage();
 }
 
 function removePerson(id) {
@@ -44,6 +132,7 @@ function removePerson(id) {
     updatePayerSelect();
     updateExpenseList();
     updateStepSummary();
+    saveDataToStorage();
 }
 
 function updatePersonList() {
@@ -171,12 +260,14 @@ function addExpense() {
     
     updateExpenseList();
     updateStepSummary();
+    saveDataToStorage();
 }
 
 function removeExpense(id) {
     expenses = expenses.filter(e => e.id !== id);
     updateExpenseList();
     updateStepSummary();
+    saveDataToStorage();
 }
 
 function updateExpenseList() {
@@ -656,9 +747,29 @@ function checkStepCompletion() {
 
 // 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化第一步为活动状态
-    document.getElementById('step1').classList.add('step-active');
-    updateStepIndicator(1, 'active');
+    // 尝试从URL或localStorage加载数据
+    let dataLoaded = loadDataFromURL();
+    if (!dataLoaded) {
+        dataLoaded = loadDataFromStorage();
+    }
+    
+    if (dataLoaded) {
+        updateAllUI();
+        // 如果有数据，检查应该在哪一步
+        if (persons.length > 0 && expenses.length > 0) {
+            // 如果已经有人员和费用，直接到第三步
+            completeStep(1);
+            completeStep(2);
+        } else if (persons.length > 0) {
+            // 如果只有人员，到第二步
+            completeStep(1);
+        }
+    } else {
+        // 初始化第一步为活动状态
+        document.getElementById('step1').classList.add('step-active');
+        updateStepIndicator(1, 'active');
+        updateDataStatus();
+    }
     
     // 添加回车键监听
     document.getElementById('personName').addEventListener('keypress', function(e) {
@@ -674,11 +785,71 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// 分享和数据管理功能
+function shareData() {
+    if (persons.length === 0 && expenses.length === 0) {
+        alert('暂无数据可分享！请先添加参与人员和费用记录。');
+        return;
+    }
+    
+    const shareUrl = generateShareableLink();
+    
+    if (navigator.share) {
+        // 移动端原生分享
+        navigator.share({
+            title: '智能费用均摊计算器',
+            text: '一起来填写费用信息，智能计算转账方案！',
+            url: shareUrl
+        });
+    } else {
+        // 复制到剪贴板
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            alert('分享链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到已填写的数据，并可以继续编辑。');
+        }).catch(() => {
+            // 降级方案：显示链接
+            prompt('请复制下方链接分享给朋友：', shareUrl);
+        });
+    }
+}
+
+function clearAllData() {
+    if (confirm('确定要清空所有数据吗？这个操作无法撤销。')) {
+        clearStoredData();
+        // 重置到第一步
+        document.querySelectorAll('[id^="step"]').forEach(step => {
+            step.classList.remove('step-completed', 'step-active');
+            step.classList.add('collapsed');
+        });
+        document.getElementById('step1').classList.remove('collapsed');
+        document.getElementById('step1').classList.add('step-active');
+        document.getElementById('step1-content').classList.remove('hidden');
+        document.getElementById('step1-arrow').classList.remove('fa-chevron-down');
+        document.getElementById('step1-arrow').classList.add('fa-chevron-up');
+        
+        // 重置进度指示器
+        updateStepIndicator(1, 'active');
+        for(let i = 2; i <= 3; i++) {
+            const indicator = document.getElementById(`step${i}-indicator`);
+            const circle = indicator.querySelector('div');
+            const text = indicator.querySelector('span');
+            circle.classList.remove('bg-blue-600', 'bg-green-600', 'text-white');
+            circle.classList.add('bg-gray-300', 'text-gray-600');
+            circle.innerHTML = i;
+            text.classList.remove('text-gray-800', 'text-green-600');
+            text.classList.add('text-gray-500');
+        }
+        
+        currentStep = 1;
+        alert('数据已清空！');
+    }
+}
+
 // 添加加载示例数据的按钮功能
 function loadExample() {
     if (confirm('这将清空当前数据并加载示例案例，确定继续吗？')) {
         loadExampleData();
         updateStepSummary();
+        saveDataToStorage();
         alert('示例数据已加载！');
     }
 } 
