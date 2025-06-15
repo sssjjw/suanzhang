@@ -114,6 +114,20 @@
                 height: 2.5rem !important;
                 padding: 0.5rem !important;
             }
+            
+            /* 添加按钮高度优化 */
+            button {
+                height: auto !important;
+            }
+            
+            /* 人员添加按钮特别优化 */
+            .flex.gap-2 button {
+                height: 2.5rem !important;
+                padding: 0.5rem 1rem !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
         }
     </style>
 </head>
@@ -201,15 +215,15 @@
                         <!-- 动态生成人员列表 -->
                     </div>
                 </div>
-                
-                <!-- 第一步下一步按钮 -->
-                <div id="step1-next-wrapper" class="flex justify-end p-4 pt-0">
-                    <button onclick="completeStep(1)" id="step1-next" 
-                            class="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base" 
-                            disabled>
-                        下一步：记录费用 <i class="fas fa-arrow-right ml-1"></i>
-                    </button>
-                </div>
+            </div>
+            
+            <!-- 第一步下一步按钮 -->
+            <div id="step1-next-wrapper" class="flex justify-end mb-6">
+                <button onclick="completeStep(1)" id="step1-next" 
+                        class="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base" 
+                        disabled>
+                    下一步：记录费用 <i class="fas fa-arrow-right ml-1"></i>
+                </button>
             </div>
 
             <!-- 第二步：费用记录 -->
@@ -248,15 +262,15 @@
                         <!-- 动态生成费用列表 -->
                     </div>
                 </div>
-                
-                <!-- 第二步下一步按钮 -->
-                <div id="step2-next-wrapper" class="flex justify-end p-4 pt-0 hidden">
-                    <button onclick="completeStep(2)" id="step2-next" 
-                            class="bg-green-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base" 
-                            disabled>
-                        下一步：计算结果 <i class="fas fa-arrow-right ml-1"></i>
-                    </button>
-                </div>
+            </div>
+            
+            <!-- 第二步下一步按钮 -->
+            <div id="step2-next-wrapper" class="flex justify-end mb-6 hidden">
+                <button onclick="completeStep(2)" id="step2-next" 
+                        class="bg-green-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base" 
+                        disabled>
+                    下一步：计算结果 <i class="fas fa-arrow-right ml-1"></i>
+                </button>
             </div>
 
             <!-- 第三步：转账设置和计算结果 -->
