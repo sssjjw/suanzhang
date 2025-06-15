@@ -745,6 +745,68 @@ function checkStepCompletion() {
     }
 }
 
+// 隐藏彩蛋：三击标题加载示例
+let titleClickCount = 0;
+let titleClickTimer = null;
+
+function initTitleEasterEgg() {
+    const titleElement = document.getElementById('mainTitle');
+    titleElement.addEventListener('click', function() {
+        titleClickCount++;
+        
+        // 清除之前的定时器
+        if (titleClickTimer) {
+            clearTimeout(titleClickTimer);
+        }
+        
+        // 设置2秒后重置计数器
+        titleClickTimer = setTimeout(() => {
+            titleClickCount = 0;
+        }, 2000);
+        
+        // 三击触发示例数据
+        if (titleClickCount === 3) {
+            titleClickCount = 0;
+            clearTimeout(titleClickTimer);
+            loadExampleEasterEgg();
+        }
+    });
+}
+
+function loadExampleEasterEgg() {
+    // 添加一个小动画效果
+    const titleElement = document.getElementById('mainTitle');
+    titleElement.style.transform = 'scale(1.05)';
+    titleElement.style.transition = 'transform 0.2s';
+    
+    setTimeout(() => {
+        titleElement.style.transform = 'scale(1)';
+    }, 200);
+    
+    // 如果有数据，询问是否覆盖
+    if (persons.length > 0 || expenses.length > 0) {
+        if (confirm('🎉 彩蛋触发！\n\n检测到已有数据，是否清空并加载示例案例？')) {
+            loadExampleData();
+            updateStepSummary();
+            saveDataToStorage();
+            
+            // 显示有趣的提示
+            setTimeout(() => {
+                alert('🧮 示例数据已加载！\n这是一个8人聚餐的费用均摊案例，体验一下智能转账优化吧！');
+            }, 100);
+        }
+    } else {
+        // 没有数据直接加载
+        loadExampleData();
+        updateStepSummary();
+        saveDataToStorage();
+        
+        setTimeout(() => {
+            alert('🎉 隐藏功能已激活！\n\n已加载8人聚餐示例，快来体验智能费用均摊吧！\n\n💡 小贴士：数据会自动保存，也可以分享给朋友一起填写。');
+        }, 100);
+    }
+}
+
 // 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
     // 尝试从URL或localStorage加载数据
@@ -770,6 +832,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateStepIndicator(1, 'active');
         updateDataStatus();
     }
+    
+    // 初始化标题彩蛋功能
+    initTitleEasterEgg();
     
     // 添加回车键监听
     document.getElementById('personName').addEventListener('keypress', function(e) {
@@ -844,12 +909,4 @@ function clearAllData() {
     }
 }
 
-// 添加加载示例数据的按钮功能
-function loadExample() {
-    if (confirm('这将清空当前数据并加载示例案例，确定继续吗？')) {
-        loadExampleData();
-        updateStepSummary();
-        saveDataToStorage();
-        alert('示例数据已加载！');
-    }
-} 
+// 原loadExample函数已被三击标题的彩蛋功能替代 
