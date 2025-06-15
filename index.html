@@ -127,6 +127,9 @@
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
+                white-space: nowrap !important;
+                min-width: fit-content !important;
+                flex-shrink: 0 !important;
             }
         }
     </style>
@@ -180,15 +183,15 @@
             <!-- 第一步：参与人员管理 -->
             <div id="step1" class="bg-white rounded-lg shadow-lg mb-6 transition-all duration-300">
                 <div class="step-header p-3 md:p-4 border-b cursor-pointer" onclick="toggleStep(1)">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-users text-blue-600 mr-2"></i>
-                            第一步：添加参与人员
-                        </h2>
-                        <div class="flex items-center">
-                            <span id="step1-summary" class="text-xs md:text-sm text-gray-600 mr-2 md:mr-3"></span>
-                            <i id="step1-arrow" class="fas fa-chevron-up text-gray-400"></i>
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center mb-1">
+                                <i class="fas fa-users text-blue-600 mr-2"></i>
+                                第一步：添加参与人员
+                            </h2>
+                            <div id="step1-summary" class="text-xs md:text-sm text-gray-600"></div>
                         </div>
+                        <i id="step1-arrow" class="fas fa-chevron-up text-gray-400 mt-1 ml-3"></i>
                     </div>
                 </div>
                 
@@ -229,15 +232,15 @@
             <!-- 第二步：费用记录 -->
             <div id="step2" class="bg-white rounded-lg shadow-lg mb-6 transition-all duration-300 collapsed">
                 <div class="step-header p-3 md:p-4 border-b cursor-pointer" onclick="toggleStep(2)">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-receipt text-green-600 mr-2"></i>
-                            第二步：记录费用支出
-                        </h2>
-                        <div class="flex items-center">
-                            <span id="step2-summary" class="text-xs md:text-sm text-gray-600 mr-2 md:mr-3"></span>
-                            <i id="step2-arrow" class="fas fa-chevron-down text-gray-400"></i>
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center mb-1">
+                                <i class="fas fa-receipt text-green-600 mr-2"></i>
+                                第二步：记录费用支出
+                            </h2>
+                            <div id="step2-summary" class="text-xs md:text-sm text-gray-600"></div>
                         </div>
+                        <i id="step2-arrow" class="fas fa-chevron-down text-gray-400 mt-1 ml-3"></i>
                     </div>
                 </div>
                 
@@ -276,15 +279,15 @@
             <!-- 第三步：转账设置和计算结果 -->
             <div id="step3" class="bg-white rounded-lg shadow-lg mb-6 transition-all duration-300 collapsed">
                 <div class="step-header p-3 md:p-4 border-b cursor-pointer" onclick="toggleStep(3)">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-calculator text-purple-600 mr-2"></i>
-                            第三步：设置转账模式并计算
-                        </h2>
-                        <div class="flex items-center">
-                            <span id="step3-summary" class="text-xs md:text-sm text-gray-600 mr-2 md:mr-3"></span>
-                            <i id="step3-arrow" class="fas fa-chevron-down text-gray-400"></i>
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h2 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center mb-1">
+                                <i class="fas fa-calculator text-purple-600 mr-2"></i>
+                                第三步：设置转账模式并计算
+                            </h2>
+                            <div id="step3-summary" class="text-xs md:text-sm text-gray-600"></div>
                         </div>
+                        <i id="step3-arrow" class="fas fa-chevron-down text-gray-400 mt-1 ml-3"></i>
                     </div>
                 </div>
                 
