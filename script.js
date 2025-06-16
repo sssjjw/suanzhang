@@ -334,12 +334,25 @@ function simpleDecompress(str) {
 function generateShareableLink() {
     try {
         console.log('开始生成分享链接...');
+        console.log('当前数据状态:', { 
+            persons: persons.length, 
+            expenses: expenses.length, 
+            activityName: activityName,
+            sessionId: sessionId
+        });
+        
+        // 检查数据是否有效
+        if (!persons || persons.length === 0) {
+            console.warn('没有人员数据，无法生成分享链接');
+            throw new Error('没有人员数据');
+        }
         
         const compactData = compressDataForSharing();
         console.log('压缩数据完成:', compactData);
         
         const jsonStr = JSON.stringify(compactData);
         console.log('JSON字符串长度:', jsonStr.length);
+        console.log('JSON内容预览:', jsonStr.substring(0, 200) + '...');
         
         const compressedStr = simpleCompress(jsonStr);
         console.log('压缩后长度:', compressedStr.length);
@@ -350,21 +363,69 @@ function generateShareableLink() {
             .replace(/\//g, '_')
             .replace(/=/g, ''); // 去掉padding
         console.log('编码后长度:', encodedData.length);
+        console.log('编码数据预览:', encodedData.substring(0, 100) + '...');
         
         const shareUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${encodedData}`;
         console.log('生成的分享链接长度:', shareUrl.length);
+        console.log('分享链接:', shareUrl);
         
         if (shareUrl.length > 2000) {
             console.warn('分享链接过长，可能在某些平台无法正常使用');
+            // 如果链接过长，尝试精简数据
+            console.log('尝试生成精简版分享链接...');
+            
+            // 创建精简版数据（不包含描述）
+            const minimalData = {
+                p: persons.map(p => ({ i: p.id, n: p.name, f: p.familyGroup })),
+                e: expenses.map(e => ({ i: e.id, p: e.payerId, a: e.amount, d: e.description ? e.description.substring(0, 10) : '' })),
+                an: activityName ? activityName.substring(0, 20) : ''
+            };
+            
+            const minimalJson = JSON.stringify(minimalData);
+            const minimalCompressed = simpleCompress(minimalJson);
+            const minimalEncoded = btoa(minimalCompressed)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+            
+            const minimalShareUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${minimalEncoded}`;
+            console.log('精简版分享链接长度:', minimalShareUrl.length);
+            
+            if (minimalShareUrl.length <= 2000) {
+                console.log('使用精简版分享链接');
+                return minimalShareUrl;
+            }
         }
         
         return shareUrl;
     } catch (error) {
         console.error('生成分享链接失败:', error);
-        // 降级方案：仅包含会话ID
-        const fallbackUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}`;
-        console.log('使用降级链接:', fallbackUrl);
-        return fallbackUrl;
+        console.error('错误堆栈:', error.stack);
+        console.error('当前数据:', { persons, expenses, activityName, sessionId });
+        
+        // 尝试更安全的降级方案
+        try {
+            // 尝试创建最小化的数据
+            const emergencyData = {
+                p: persons.slice(0, 3).map(p => ({ i: p.id, n: p.name.substring(0, 5), f: 1 })),
+                e: expenses.slice(0, 3).map(e => ({ i: e.id, p: e.payerId, a: e.amount, d: '' })),
+                an: ''
+            };
+            
+            const emergencyJson = JSON.stringify(emergencyData);
+            const emergencyEncoded = btoa(emergencyJson).replace(/[+/=]/g, '');
+            const emergencyUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${emergencyEncoded}`;
+            
+            console.log('使用应急分享链接:', emergencyUrl);
+            return emergencyUrl;
+        } catch (emergencyError) {
+            console.error('应急分享链接也失败了:', emergencyError);
+            
+            // 最后的降级方案：仅包含会话ID
+            const fallbackUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}`;
+            console.log('使用最终降级链接:', fallbackUrl);
+            return fallbackUrl;
+        }
     }
 }
 
