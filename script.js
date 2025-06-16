@@ -1353,6 +1353,29 @@ function showWelcomeDialog() {
 
 // 开始新活动
 function startNewActivity() {
+    // 检查是否已有数据，如果有则询问用户
+    if (persons.length > 0 || expenses.length > 0) {
+        if (!confirm('确定要创建新的活动吗？\n\n这将清空当前数据并开始新的计算任务。')) {
+            return;
+        }
+        
+        // 清空现有数据
+        persons = [];
+        expenses = [];
+        currentStep = 1;
+        activityName = '';
+        
+        // 生成新的会话ID
+        sessionId = generateSessionId();
+        
+        // 更新URL
+        const newUrl = `${window.location.pathname}?s=${sessionId}`;
+        window.history.pushState({}, '', newUrl);
+        
+        // 重置所有步骤状态
+        resetAllSteps();
+    }
+    
     const activityNameInput = prompt('请输入活动名称：', '');
     if (activityNameInput === null) {
         return; // 用户取消
@@ -1368,7 +1391,7 @@ function startNewActivity() {
     activityName = activityNameInput.trim();
     updateActivityTitle();
     
-    // 移除欢迎弹窗
+    // 移除欢迎弹窗（如果存在）
     const overlay = document.querySelector('.fixed.inset-0');
     if (overlay) {
         overlay.remove();
@@ -1388,6 +1411,56 @@ function startNewActivity() {
     
     // 保存初始状态
     saveDataToStorage();
+}
+
+// 重置所有步骤状态的辅助函数
+function resetAllSteps() {
+    for(let i = 1; i <= 3; i++) {
+        const step = document.getElementById(`step${i}`);
+        const content = document.getElementById(`step${i}-content`);
+        const arrow = document.getElementById(`step${i}-arrow`);
+        const nextButton = document.getElementById(`step${i}-next-wrapper`);
+        
+        // 清除所有状态类
+        step.classList.remove('step-completed', 'step-active', 'collapsed');
+        content.classList.add('hidden');
+        arrow.classList.remove('fa-chevron-up');
+        arrow.classList.add('fa-chevron-down');
+        
+        // 隐藏下一步按钮
+        if (nextButton) {
+            nextButton.classList.add('hidden');
+        }
+        
+        // 第一步除外
+        if (i !== 1) {
+            step.classList.add('collapsed');
+        }
+    }
+    
+    // 重置进度指示器
+    updateStepIndicator(1, 'active');
+    for(let i = 2; i <= 3; i++) {
+        const indicator = document.getElementById(`step${i}-indicator`);
+        if (indicator) {
+            const circle = indicator.querySelector('div');
+            const text = indicator.querySelector('span');
+            circle.classList.remove('bg-blue-600', 'bg-green-600', 'text-white');
+            circle.classList.add('bg-gray-300', 'text-gray-600');
+            circle.innerHTML = i;
+            text.classList.remove('text-gray-800', 'text-green-600');
+            text.classList.add('text-gray-500');
+            
+            // 重置进度条
+            const progress = document.getElementById(`progress${i-1}`);
+            if (progress) {
+                progress.classList.remove('progress-active');
+            }
+        }
+    }
+    
+    // 更新所有UI
+    updateAllUI();
 }
 
 // 显示历史活动
