@@ -1,20 +1,24 @@
 {
-  "name": "smart-expense-splitter",
+  "name": "suanzhang",
   "version": "1.0.0",
-  "description": "智能费用均摊计算器 - 聚餐、旅行、活动费用一键均摊，智能优化转账次数",
+  "description": "智能费用均摊计算器 - 支持实时协作",
   "main": "index.html",
   "scripts": {
-    "start": "python3 -m http.server 8000",
-    "dev": "python3 -m http.server 8000"
+    "dev": "npx serve .",
+    "build": "echo 'Static site, no build needed'"
+  },
+  "dependencies": {
+    "firebase": "^10.7.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
   },
   "keywords": [
-    "费用均摊",
-    "聚餐分账",
-    "旅行费用",
-    "转账优化",
-    "AA收款"
+    "费用分摊",
+    "协作",
+    "实时同步"
   ],
-  "author": "Sunway",
+  "author": "Smart Expense Splitter",
   "license": "MIT",
   "repository": {
     "type": "git",

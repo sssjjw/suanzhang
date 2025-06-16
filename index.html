@@ -34,6 +34,22 @@
     
     <!-- 微信JS-SDK -->
     <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase配置检测
+        import firebaseConfig from './firebase-config.js';
+        
+        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+            console.log('⚠️ Firebase未配置，仅启用离线功能');
+            console.log('💡 如需启用实时协作，请配置Firebase：');
+            console.log('1. 访问 https://console.firebase.google.com/');
+            console.log('2. 创建新项目');
+            console.log('3. 添加Web应用');
+            console.log('4. 复制配置到 firebase-config.js');
+            console.log('5. 启用Firestore数据库');
+        }
+    </script>
     <style>
         .collapsed {
             max-height: 80px;
@@ -158,8 +174,11 @@
                 智能费用均摊计算器
             </h1>
             <p class="text-sm md:text-base text-gray-600 mb-2">聚餐、旅行、活动费用一键均摊，智能优化转账次数</p>
-            <p id="dataStatus" class="text-xs text-green-600 mb-4">
+            <p id="dataStatus" class="text-xs text-green-600 mb-2">
                 <i class="fas fa-save mr-1"></i>数据已自动保存，刷新页面不丢失
+            </p>
+            <p id="realtimeStatus" class="text-xs text-blue-600 mb-4">
+                <i class="fas fa-cloud mr-1"></i>正在初始化协作功能...
             </p>
             <div class="mt-4 space-y-2">
                 <div class="flex flex-wrap justify-center gap-2">
@@ -373,6 +392,22 @@
         </div>
     </div>
 
-    <script src="script.js?v=2024061601"></script>
+    <!-- 根据Firebase配置加载对应的脚本 -->
+    <script type="module">
+        // 检查Firebase配置并决定加载哪个版本
+        import firebaseConfig from './firebase-config.js';
+        
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            // Firebase已配置，加载实时协作版本
+            console.log('🚀 加载实时协作版本');
+            import('./script-realtime.js');
+        } else {
+            // Firebase未配置，加载标准版本
+            console.log('📱 加载离线版本');
+            const script = document.createElement('script');
+            script.src = './script.js?v=2024061601';
+            document.head.appendChild(script);
+        }
+    </script>
 </body>
 </html> 
