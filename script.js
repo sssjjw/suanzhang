@@ -197,8 +197,7 @@ function clearStoredData() {
     persons = [];
     expenses = [];
     currentStep = 1;
-    activityName = '';
-    updateActivityTitle();
+    // 注意：不清空活动名称
     updateAllUI();
 }
 
@@ -1376,8 +1375,11 @@ function showWelcomeDialog() {
 // 开始新活动
 function startNewActivity() {
     // 检查是否已有数据，如果有则询问用户
-    if (persons.length > 0 || expenses.length > 0) {
-        if (!confirm('确定要创建新的活动吗？\n\n这将清空当前数据并开始新的计算任务。')) {
+    if (persons.length > 0 || expenses.length > 0 || activityName) {
+        const currentActivityText = activityName ? `当前活动：${activityName}` : '当前计算任务';
+        const confirmMessage = `确定要创建新的活动吗？\n\n${currentActivityText}的数据将被保存到历史活动中，您随时可以在"查看历史活动"中找回。\n\n点击确定将开始新的计算任务。`;
+        
+        if (!confirm(confirmMessage)) {
             return;
         }
         
@@ -1550,7 +1552,17 @@ function showActivityHistory() {
 
 // 关闭历史活动弹窗
 function closeActivityHistory() {
-    showWelcomeDialog();
+    // 移除历史活动弹窗
+    const overlay = document.querySelector('.fixed.inset-0');
+    if (overlay) {
+        overlay.remove();
+    }
+    
+    // 显示主要内容
+    const mainContent = document.querySelector('.max-w-6xl');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
 }
 
 // 加载指定活动
@@ -1868,7 +1880,8 @@ function showShareDialog(shareUrl) {
 }
 
 function clearAllData() {
-    if (confirm('确定要清空所有数据吗？这个操作无法撤销。')) {
+    const currentActivityText = activityName ? `"${activityName}"活动的` : '';
+    if (confirm(`确定要清空${currentActivityText}所有数据吗？\n\n注意：活动名称将保留，但人员和费用数据将被清空。这个操作无法撤销。`)) {
         clearStoredData();
         
         // 重置所有步骤状态
@@ -1927,7 +1940,11 @@ function clearAllData() {
         }
         
         currentStep = 1;
-        alert('数据已清空！');
+        
+        // 保存清空后的状态（保留活动名称）
+        saveDataToStorage();
+        
+        alert('数据已清空！活动名称已保留。');
     }
 }
 
