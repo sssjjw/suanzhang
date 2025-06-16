@@ -1733,13 +1733,85 @@ function shareData() {
 // 处理微信分享
 function handleWeChatShare(shareUrl) {
     console.log('处理微信分享...');
+    
+    // 尝试触发微信的原生分享面板
+    if (tryWeChatNativeShare(shareUrl)) {
+        return;
+    }
+    
+    // 如果原生分享不可用，使用降级方案
+    fallbackWeChatShare(shareUrl);
+}
+
+// 尝试触发微信原生分享
+function tryWeChatNativeShare(shareUrl) {
+    try {
+        // 设置页面标题和描述用于微信分享
+        const originalTitle = document.title;
+        const shareTitle = activityName ? `${activityName} - 费用均摊` : '智能费用均摊计算器';
+        document.title = shareTitle;
+        
+        // 添加页面描述
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) {
+            metaDesc = document.createElement('meta');
+            metaDesc.name = 'description';
+            document.head.appendChild(metaDesc);
+        }
+        metaDesc.content = '一起来填写费用信息，智能计算转账方案！';
+        
+        // 检测是否在微信内置浏览器中
+        const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+        
+        if (isWeChat) {
+            // 尝试使用微信的自定义分享协议
+            const wechatShareUrl = `weixin://dl/moments?text=${encodeURIComponent(shareTitle + ' - ' + shareUrl)}`;
+            
+            // 创建一个隐藏的链接来尝试打开微信分享
+            const link = document.createElement('a');
+            link.href = wechatShareUrl;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            try {
+                link.click();
+                document.body.removeChild(link);
+                
+                // 提示用户点击右上角分享
+                setTimeout(() => {
+                    alert('✅ 微信分享已准备就绪！\n\n📱 操作步骤：\n1. 点击右上角的 "..." 按钮\n2. 选择 "发送给朋友" 或 "分享到朋友圈"\n3. 朋友打开链接就能查看数据');
+                }, 500);
+                
+                return true;
+            } catch (e) {
+                console.log('微信自定义协议失败:', e);
+                document.body.removeChild(link);
+            }
+        }
+        
+        // 恢复原标题
+        setTimeout(() => {
+            document.title = originalTitle;
+        }, 1000);
+        
+        return false;
+    } catch (error) {
+        console.log('微信原生分享尝试失败:', error);
+        return false;
+    }
+}
+
+// 微信分享降级方案
+function fallbackWeChatShare(shareUrl) {
+    // 优先提示用户使用右上角菜单分享
+    alert('📱 微信分享提示\n\n方法一（推荐）：\n1. 点击右上角 "..." 按钮\n2. 选择 "发送给朋友" 或 "分享到朋友圈"\n3. 系统会自动分享当前页面\n\n方法二（备用）：\n点击确定后复制链接手动分享');
+    
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
             console.log('微信环境复制成功');
             alert('✅ 分享链接已复制成功！\n\n📱 在微信中分享步骤：\n1. 打开要分享的聊天窗口\n2. 长按输入框粘贴链接\n3. 发送给朋友\n\n💡 朋友打开链接就能看到数据并协作编辑！');
         }).catch((error) => {
             console.log('微信环境复制失败:', error);
-            // 微信中剪贴板API失败时的降级方案
             showShareDialog(shareUrl);
         });
     } else {
