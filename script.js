@@ -306,29 +306,14 @@ function decompressSharedData(compactData) {
 
 // 简单的字符串压缩函数
 function simpleCompress(str) {
-    // 替换常见的重复字符串
-    return str
-        .replace(/"id":/g, '"i":')
-        .replace(/"name":/g, '"n":')
-        .replace(/"familyGroup":/g, '"f":')
-        .replace(/"payerId":/g, '"p":')
-        .replace(/"amount":/g, '"a":')
-        .replace(/"description":/g, '"d":')
-        .replace(/"activityName":/g, '"an":')
-        .replace(/,"/g, ',"')
-        .replace(/":"/g, '":"');
+    // 数据已经在compressDataForSharing中压缩过了，这里直接返回
+    return str;
 }
 
 function simpleDecompress(str) {
     // 还原压缩的字符串
-    return str
-        .replace(/"i":/g, '"id":')
-        .replace(/"n":/g, '"name":')
-        .replace(/"f":/g, '"familyGroup":')
-        .replace(/"p":/g, '"payerId":')
-        .replace(/"a":/g, '"amount":')
-        .replace(/"d":/g, '"description":')
-        .replace(/"an":/g, '"activityName":');
+    // 注意：这里不需要替换字段名，因为decompressSharedData函数会处理紧凑格式
+    return str;
 }
 
 function generateShareableLink() {
