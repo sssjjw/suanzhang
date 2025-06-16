@@ -371,11 +371,14 @@ function generateShareableLink() {
 function loadDataFromURL() {
     console.log('开始从URL加载数据...');
     const urlParams = new URLSearchParams(window.location.search);
+    const currentUrl = window.location.href;
+    console.log('当前URL:', currentUrl);
     
     // 尝试新格式 (压缩格式)
     let encodedData = urlParams.get('d');
-    console.log('获取到的编码数据长度:', encodedData ? encodedData.length : 0);
+    console.log('获取到的新格式编码数据长度:', encodedData ? encodedData.length : 0);
     if (encodedData) {
+        console.log('新格式数据前50个字符:', encodedData.substring(0, 50) + '...');
         try {
             // 还原URL安全的base64编码
             let base64Str = encodedData
@@ -387,9 +390,16 @@ function loadDataFromURL() {
                 base64Str += '=';
             }
             
+            console.log('base64解码前长度:', base64Str.length);
             const compressedStr = atob(base64Str);
+            console.log('base64解码后长度:', compressedStr.length);
+            
             const decompressedStr = simpleDecompress(compressedStr);
+            console.log('解压缩后长度:', decompressedStr.length);
+            
             const compactData = JSON.parse(decompressedStr);
+            console.log('紧凑数据结构:', compactData);
+            
             const decodedData = decompressSharedData(compactData);
             console.log('解压缩分享数据:', decodedData);
             
@@ -405,15 +415,20 @@ function loadDataFromURL() {
                 updateActivityTitle();
                 updateAllUI();
                 return true;
+            } else {
+                console.warn('新格式数据无效：缺少persons或expenses');
             }
         } catch (error) {
             console.error('从URL加载压缩数据失败:', error);
+            console.error('错误详情:', error.message);
         }
     }
     
     // 尝试旧格式 (兼容性)
     encodedData = urlParams.get('data');
+    console.log('获取到的旧格式编码数据长度:', encodedData ? encodedData.length : 0);
     if (encodedData) {
+        console.log('旧格式数据前50个字符:', encodedData.substring(0, 50) + '...');
         try {
             const decodedData = JSON.parse(decodeURIComponent(atob(encodedData)));
             console.log('解析旧格式分享数据:', decodedData);
@@ -429,11 +444,21 @@ function loadDataFromURL() {
                 updateActivityTitle();
                 updateAllUI();
                 return true;
+            } else {
+                console.warn('旧格式数据无效：缺少persons或expenses');
             }
         } catch (error) {
             console.error('从URL加载旧格式数据失败:', error);
+            console.error('错误详情:', error.message);
         }
     }
+    
+    // 列出所有URL参数用于调试
+    const allParams = {};
+    for (const [key, value] of urlParams.entries()) {
+        allParams[key] = value;
+    }
+    console.log('所有URL参数:', allParams);
     
     console.log('URL数据加载失败，没有找到有效数据');
     return false;
@@ -1297,26 +1322,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // 检查URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const urlSessionId = urlParams.get('s');
-    const urlData = urlParams.get('d');
+    const urlData = urlParams.get('d') || urlParams.get('data'); // 兼容新旧格式
     
-    if (urlSessionId && urlData) {
-        console.log('检测到分享链接参数:', { sessionId: urlSessionId, data: urlData.substring(0, 50) + '...' });
-        // 从URL加载数据
-        sessionId = urlSessionId; // 设置会话ID
+    console.log('URL参数检查:', { sessionId: urlSessionId, hasData: !!urlData });
+    
+    // 如果有URL参数，尝试从URL加载数据
+    if (urlSessionId || urlData) {
+        if (urlSessionId) {
+            sessionId = urlSessionId; // 设置会话ID
+            console.log('设置会话ID:', sessionId);
+        }
+        
         const success = loadDataFromURL();
         console.log('URL数据加载结果:', success);
+        
         if (success) {
             console.log('URL数据加载成功，显示主界面');
             updateAllUI();
             initializeSteps();
             return;
         } else {
-            console.log('URL数据加载失败，继续正常初始化流程');
+            console.log('URL数据加载失败，检查是否为仅会话ID的链接');
+            
+            // 如果有会话ID但没有数据，尝试从localStorage加载该会话的数据
+            if (urlSessionId && !urlData) {
+                console.log('尝试从localStorage加载会话数据:', urlSessionId);
+                const sessionKey = `expenseSplitterData_${urlSessionId}`;
+                const sessionData = localStorage.getItem(sessionKey);
+                
+                if (sessionData) {
+                    try {
+                        const data = JSON.parse(sessionData);
+                        console.log('从localStorage加载会话数据成功:', data);
+                        
+                        persons = data.persons || [];
+                        expenses = data.expenses || [];
+                        activityName = data.activityName || '';
+                        
+                        updateActivityTitle();
+                        updateAllUI();
+                        initializeSteps();
+                        return;
+                    } catch (error) {
+                        console.error('解析localStorage会话数据失败:', error);
+                    }
+                }
+            }
         }
     }
     
-    // 初始化会话
-    initializeSession();
+    // 初始化会话（如果还没有设置sessionId）
+    if (!sessionId) {
+        initializeSession();
+    }
     
     // 检查是否有现有数据
     if (persons.length > 0 || expenses.length > 0) {
