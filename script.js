@@ -329,18 +329,40 @@ function simpleDecompress(str) {
 }
 
 function generateShareableLink() {
-    const compactData = compressDataForSharing();
-    const jsonStr = JSON.stringify(compactData);
-    const compressedStr = simpleCompress(jsonStr);
-    
-    // 使用URL安全的base64编码
-    const encodedData = btoa(compressedStr)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, ''); // 去掉padding
-    
-    const shareUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${encodedData}`;
-    return shareUrl;
+    try {
+        console.log('开始生成分享链接...');
+        
+        const compactData = compressDataForSharing();
+        console.log('压缩数据完成:', compactData);
+        
+        const jsonStr = JSON.stringify(compactData);
+        console.log('JSON字符串长度:', jsonStr.length);
+        
+        const compressedStr = simpleCompress(jsonStr);
+        console.log('压缩后长度:', compressedStr.length);
+        
+        // 使用URL安全的base64编码
+        const encodedData = btoa(compressedStr)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, ''); // 去掉padding
+        console.log('编码后长度:', encodedData.length);
+        
+        const shareUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${encodedData}`;
+        console.log('生成的分享链接长度:', shareUrl.length);
+        
+        if (shareUrl.length > 2000) {
+            console.warn('分享链接过长，可能在某些平台无法正常使用');
+        }
+        
+        return shareUrl;
+    } catch (error) {
+        console.error('生成分享链接失败:', error);
+        // 降级方案：仅包含会话ID
+        const fallbackUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}`;
+        console.log('使用降级链接:', fallbackUrl);
+        return fallbackUrl;
+    }
 }
 
 function loadDataFromURL() {
@@ -1660,66 +1682,116 @@ function createNewSession() {
 
 // 分享和数据管理功能
 function shareData() {
-    if (persons.length === 0 && expenses.length === 0) {
-        alert('暂无数据可分享！请先添加参与人员和费用记录。');
-        return;
-    }
-    
-    const shareUrl = generateShareableLink();
-    
-    // 检测是否在微信环境中
-    const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
-    
-    if (isWeChat) {
-        // 微信环境：直接复制链接，不使用原生分享
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert('✅ 分享链接已复制成功！\n\n📱 在微信中分享步骤：\n1. 打开要分享的聊天窗口\n2. 长按输入框粘贴链接\n3. 发送给朋友\n\n💡 朋友打开链接就能看到数据并协作编辑！');
-            }).catch(() => {
-                // 微信中剪贴板API失败时的降级方案
-                showShareDialog(shareUrl);
+    try {
+        console.log('开始分享功能...', { 
+            persons: persons.length, 
+            expenses: expenses.length,
+            userAgent: navigator.userAgent 
+        });
+        
+        if (persons.length === 0 && expenses.length === 0) {
+            alert('暂无数据可分享！请先添加参与人员和费用记录。');
+            return;
+        }
+        
+        const shareUrl = generateShareableLink();
+        console.log('生成分享链接:', shareUrl);
+        
+        // 检测是否在微信环境中
+        const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+        console.log('是否微信环境:', isWeChat);
+        
+        if (isWeChat) {
+            // 微信环境：直接复制链接，不使用原生分享
+            handleWeChatShare(shareUrl);
+        } else if (navigator.share && !isWeChat) {
+            // 非微信环境才使用原生分享
+            console.log('尝试使用原生分享API...');
+            navigator.share({
+                title: '智能费用均摊计算器',
+                text: '一起来填写费用信息，智能计算转账方案！',
+                url: shareUrl
+            }).then(() => {
+                console.log('原生分享成功');
+            }).catch((error) => {
+                console.log('原生分享失败，降级到复制链接:', error);
+                // 原生分享失败，降级到复制链接
+                copyToClipboard(shareUrl);
             });
         } else {
-            showShareDialog(shareUrl);
-        }
-    } else if (navigator.share && !isWeChat) {
-        // 非微信环境才使用原生分享
-        navigator.share({
-            title: '智能费用均摊计算器',
-            text: '一起来填写费用信息，智能计算转账方案！',
-            url: shareUrl
-        }).catch(() => {
-            // 原生分享失败，降级到复制链接
+            // 其他情况：复制到剪贴板
+            console.log('使用剪贴板复制...');
             copyToClipboard(shareUrl);
+        }
+        
+    } catch (error) {
+        console.error('分享功能出错:', error);
+        alert('分享功能遇到问题，请刷新页面后重试。\n\n错误信息: ' + error.message);
+    }
+}
+
+// 处理微信分享
+function handleWeChatShare(shareUrl) {
+    console.log('处理微信分享...');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            console.log('微信环境复制成功');
+            alert('✅ 分享链接已复制成功！\n\n📱 在微信中分享步骤：\n1. 打开要分享的聊天窗口\n2. 长按输入框粘贴链接\n3. 发送给朋友\n\n💡 朋友打开链接就能看到数据并协作编辑！');
+        }).catch((error) => {
+            console.log('微信环境复制失败:', error);
+            // 微信中剪贴板API失败时的降级方案
+            showShareDialog(shareUrl);
         });
     } else {
-        // 其他情况：复制到剪贴板
-        copyToClipboard(shareUrl);
+        console.log('微信环境无剪贴板API，使用对话框');
+        showShareDialog(shareUrl);
     }
 }
 
 function copyToClipboard(shareUrl) {
-    if (navigator.clipboard) {
+    console.log('尝试复制到剪贴板...');
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('分享链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到已填写的数据，并可以继续编辑。\n\n💡 每次分享都会创建独立的数据空间，多人可同时使用不同的计算任务。');
-        }).catch(() => {
+            console.log('剪贴板复制成功');
+            alert('✅ 分享链接已复制到剪贴板！\n\n发送给朋友后，他们打开链接就能看到已填写的数据，并可以继续编辑。\n\n💡 每次分享都会创建独立的数据空间，多人可同时使用不同的计算任务。');
+        }).catch((error) => {
+            console.log('剪贴板复制失败，使用对话框:', error);
             showShareDialog(shareUrl);
         });
     } else {
+        console.log('不支持剪贴板API，使用对话框');
         showShareDialog(shareUrl);
     }
 }
 
 function showShareDialog(shareUrl) {
+    console.log('显示分享对话框');
+    
     // 创建一个更友好的分享对话框
     const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
-    const message = isWeChat ? 
-        '📱 请复制下方链接在微信中分享：\n\n(长按链接可选择复制)' : 
-        '请复制下方链接分享给朋友：';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    const result = prompt(message, shareUrl);
-    if (result) {
-        alert('✅ 链接已准备好分享！\n\n朋友打开链接就能看到数据并一起编辑。');
+    if (isMobile) {
+        // 手机端使用更明确的提示
+        const message = isWeChat ? 
+            '📱 微信分享步骤：\n\n1. 复制下方链接\n2. 打开要分享的聊天窗口\n3. 长按输入框粘贴\n4. 发送给朋友\n\n链接：' : 
+            '📱 请复制下方链接分享给朋友：\n\n长按链接可选择复制\n\n链接：';
+        
+        const result = prompt(message, shareUrl);
+        if (result !== null) {
+            alert('✅ 链接已准备好分享！\n\n朋友打开链接就能看到数据并一起编辑。');
+        }
+    } else {
+        // 桌面端使用简洁提示
+        const message = isWeChat ? 
+            '📱 请复制下方链接在微信中分享：\n\n(长按链接可选择复制)' : 
+            '请复制下方链接分享给朋友：';
+        
+        const result = prompt(message, shareUrl);
+        if (result) {
+            alert('✅ 链接已准备好分享！\n\n朋友打开链接就能看到数据并一起编辑。');
+        }
     }
 }
 
