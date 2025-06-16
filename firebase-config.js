@@ -1,19 +1,13 @@
 // Firebase配置文件
-// 请在Firebase控制台创建项目后替换这些配置
+// 项目ID: suanzhang-953a6
+
 const firebaseConfig = {
-    // 替换为您的Firebase配置
-    apiKey: "YOUR_API_KEY",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "your-app-id"
+    apiKey: "AIzaSyAacOxSNC5lykPRtwBh_pGG61D0lAVqFgo",
+    authDomain: "suanzhang-953a6.firebaseapp.com",
+    projectId: "suanzhang-953a6",
+    storageBucket: "suanzhang-953a6.firebasestorage.app",
+    messagingSenderId: "490088418649",
+    appId: "1:490088418649:web:4d7640451073f625d31048"
 };
 
-// 如果您还没有Firebase项目，请访问：https://console.firebase.google.com/
-// 1. 创建新项目
-// 2. 添加Web应用
-// 3. 复制配置信息到这里
-// 4. 启用Firestore数据库
-
-export default firebaseConfig; 
+export default firebaseConfig;
