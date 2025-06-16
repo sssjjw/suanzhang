@@ -1,17 +1,5 @@
 // Firebase实时协作服务
-import { initializeApp } from 'firebase/app';
-import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    getDoc, 
-    onSnapshot, 
-    updateDoc,
-    deleteDoc,
-    serverTimestamp,
-    arrayUnion,
-    arrayRemove
-} from 'firebase/firestore';
+// 使用Firebase v9兼容性API
 import firebaseConfig from './firebase-config.js';
 
 class FirebaseService {
@@ -30,8 +18,8 @@ class FirebaseService {
     // 初始化Firebase
     async initialize() {
         try {
-            this.app = initializeApp(firebaseConfig);
-            this.db = getFirestore(this.app);
+            this.app = firebase.initializeApp(firebaseConfig);
+            this.db = firebase.firestore();
             console.log('✅ Firebase初始化成功');
             return true;
         } catch (error) {
@@ -53,16 +41,16 @@ class FirebaseService {
         }
 
         try {
-            const sessionRef = doc(this.db, 'sessions', sessionData.sessionId);
+            const sessionRef = this.db.collection('sessions').doc(sessionData.sessionId);
             const data = {
                 ...sessionData,
-                createdAt: serverTimestamp(),
-                lastModified: serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastModified: firebase.firestore.FieldValue.serverTimestamp(),
                 collaborators: [sessionData.creatorId || 'anonymous'],
                 version: 1
             };
             
-            await setDoc(sessionRef, data);
+            await sessionRef.set(data);
             console.log('✅ 协作会话创建成功:', sessionData.sessionId);
             return sessionData.sessionId;
         } catch (error) {
@@ -79,14 +67,14 @@ class FirebaseService {
         }
 
         try {
-            const sessionRef = doc(this.db, 'sessions', sessionId);
-            const sessionDoc = await getDoc(sessionRef);
+            const sessionRef = this.db.collection('sessions').doc(sessionId);
+            const sessionDoc = await sessionRef.get();
             
-            if (sessionDoc.exists()) {
+            if (sessionDoc.exists) {
                 // 添加用户到协作者列表
-                await updateDoc(sessionRef, {
-                    collaborators: arrayUnion(userId),
-                    lastModified: serverTimestamp()
+                await sessionRef.update({
+                    collaborators: firebase.firestore.FieldValue.arrayUnion(userId),
+                    lastModified: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 console.log('✅ 成功加入会话:', sessionId);
@@ -114,10 +102,10 @@ class FirebaseService {
         }
 
         this.currentSessionId = sessionId;
-        const sessionRef = doc(this.db, 'sessions', sessionId);
+        const sessionRef = this.db.collection('sessions').doc(sessionId);
         
-        this.unsubscribe = onSnapshot(sessionRef, (doc) => {
-            if (doc.exists()) {
+        this.unsubscribe = sessionRef.onSnapshot((doc) => {
+            if (doc.exists) {
                 const data = doc.data();
                 this.lastSyncTime = new Date();
                 console.log('🔄 接收到数据更新:', data.version);
@@ -144,15 +132,18 @@ class FirebaseService {
         }
 
         try {
-            const sessionRef = doc(this.db, 'sessions', sessionId);
+            const sessionRef = this.db.collection('sessions').doc(sessionId);
+            const sessionDoc = await sessionRef.get();
+            const currentVersion = sessionDoc.exists ? sessionDoc.data().version : 0;
+            
             const updateData = {
                 ...updates,
-                lastModified: serverTimestamp(),
+                lastModified: firebase.firestore.FieldValue.serverTimestamp(),
                 lastModifiedBy: userId,
-                version: (await getDoc(sessionRef)).data()?.version + 1 || 1
+                version: currentVersion + 1
             };
             
-            await updateDoc(sessionRef, updateData);
+            await sessionRef.update(updateData);
             console.log('✅ 数据更新成功');
             return true;
         } catch (error) {
@@ -168,7 +159,7 @@ class FirebaseService {
         }
 
         try {
-            await deleteDoc(doc(this.db, 'sessions', sessionId));
+            await this.db.collection('sessions').doc(sessionId).delete();
             console.log('✅ 会话删除成功');
             return true;
         } catch (error) {
