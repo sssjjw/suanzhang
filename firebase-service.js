@@ -1,6 +1,5 @@
 // Firebase实时协作服务
 // 使用Firebase v9兼容性API
-import firebaseConfig from './firebase-config.js';
 
 class FirebaseService {
     constructor() {
@@ -18,7 +17,12 @@ class FirebaseService {
     // 初始化Firebase
     async initialize() {
         try {
-            this.app = firebase.initializeApp(firebaseConfig);
+            if (!window.firebaseConfig) {
+                console.error('❌ Firebase配置未找到');
+                return false;
+            }
+            
+            this.app = firebase.initializeApp(window.firebaseConfig);
             this.db = firebase.firestore();
             console.log('✅ Firebase初始化成功');
             return true;
@@ -30,7 +34,7 @@ class FirebaseService {
 
     // 检查Firebase是否已配置
     isConfigured() {
-        return firebaseConfig.apiKey !== "YOUR_API_KEY";
+        return window.firebaseConfig && window.firebaseConfig.apiKey !== "YOUR_API_KEY";
     }
 
     // 创建新的协作会话
@@ -225,6 +229,4 @@ class FirebaseService {
 }
 
 // 创建全局实例
-const firebaseService = new FirebaseService();
-
-export default firebaseService; 
+window.firebaseService = new FirebaseService(); 

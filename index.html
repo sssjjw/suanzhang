@@ -395,21 +395,43 @@
         </div>
     </div>
 
-    <!-- 根据Firebase配置加载对应的脚本 -->
-    <script type="module">
+    <!-- Firebase配置检查和脚本加载 -->
+    <script>
         // 检查Firebase配置并决定加载哪个版本
-        import firebaseConfig from './firebase-config.js';
-        
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-            // Firebase已配置，加载实时协作版本
-            console.log('🚀 加载实时协作版本');
-            import('./script-realtime.js');
-        } else {
-            // Firebase未配置，加载标准版本
-            console.log('📱 加载离线版本');
+        function loadAppropriateScript() {
+            // 先加载Firebase配置
             const script = document.createElement('script');
-            script.src = './script.js?v=2024061601';
+            script.src = './firebase-config.js';
+            script.onload = function() {
+                if (window.firebaseConfig && window.firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                    // Firebase已配置，加载实时协作版本
+                    console.log('🚀 加载实时协作版本');
+                    const realtimeScript = document.createElement('script');
+                    realtimeScript.src = './script-realtime.js?v=' + Date.now();
+                    document.head.appendChild(realtimeScript);
+                } else {
+                    // Firebase未配置，加载标准版本
+                    console.log('📱 加载离线版本');
+                    const offlineScript = document.createElement('script');
+                    offlineScript.src = './script.js?v=2024061601';
+                    document.head.appendChild(offlineScript);
+                }
+            };
+            script.onerror = function() {
+                // 配置文件加载失败，使用离线版本
+                console.log('📱 配置文件未找到，加载离线版本');
+                const offlineScript = document.createElement('script');
+                offlineScript.src = './script.js?v=2024061601';
+                document.head.appendChild(offlineScript);
+            };
             document.head.appendChild(script);
+        }
+        
+        // 页面加载完成后执行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadAppropriateScript);
+        } else {
+            loadAppropriateScript();
         }
     </script>
 </body>

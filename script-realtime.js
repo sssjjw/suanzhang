@@ -1,7 +1,14 @@
 // 实时协作版本的费用分摊计算器
 // 集成Firebase Firestore实现多人协作编辑
 
-import firebaseService from './firebase-service.js';
+// 加载Firebase服务
+const firebaseServiceScript = document.createElement('script');
+firebaseServiceScript.src = './firebase-service.js';
+firebaseServiceScript.onload = function() {
+    // Firebase服务加载完成后初始化应用
+    initializeApp();
+};
+document.head.appendChild(firebaseServiceScript);
 
 // 全局变量
 let persons = [];
@@ -27,14 +34,20 @@ function generateSessionId() {
 async function initializeApp() {
     console.log('🚀 初始化实时协作费用分摊计算器');
     
+    // 确保Firebase服务已加载
+    if (!window.firebaseService) {
+        console.error('❌ Firebase服务未加载');
+        return;
+    }
+    
     // 生成用户ID
     userId = generateUserId();
     console.log('👤 用户ID:', userId);
     
     // 初始化Firebase
-    const firebaseInitialized = await firebaseService.initialize();
+    const firebaseInitialized = await window.firebaseService.initialize();
     
-    if (firebaseInitialized && firebaseService.isConfigured()) {
+    if (firebaseInitialized && window.firebaseService.isConfigured()) {
         isRealtimeEnabled = true;
         console.log('✅ 实时协作功能已启用');
         updateRealtimeStatus('已连接到云端数据库 🌟');
@@ -83,7 +96,7 @@ async function joinCollaborativeSession(urlSessionId) {
     try {
         updateRealtimeStatus('正在加入协作会话... 🔄');
         
-        const sessionData = await firebaseService.joinSession(urlSessionId, userId);
+        const sessionData = await window.firebaseService.joinSession(urlSessionId, userId);
         
         if (sessionData) {
             sessionId = urlSessionId;
@@ -132,7 +145,7 @@ async function createNewCollaborativeSession() {
             creatorId: userId
         };
         
-        const createdSessionId = await firebaseService.createSession(sessionData);
+        const createdSessionId = await window.firebaseService.createSession(sessionData);
         
         if (createdSessionId) {
             sessionId = createdSessionId;
@@ -155,7 +168,7 @@ async function createNewCollaborativeSession() {
 function subscribeToRealtimeUpdates() {
     if (!isRealtimeEnabled || !sessionId) return;
     
-    firebaseService.subscribeToSession(sessionId, (data) => {
+    window.firebaseService.subscribeToSession(sessionId, (data) => {
         // 避免重复更新（如果是自己的更改）
         if (data.version <= lastSyncVersion) return;
         
@@ -189,7 +202,7 @@ async function syncToFirebase() {
         activityName: activityName
     };
     
-    const success = await firebaseService.updateSession(sessionId, updates, userId);
+    const success = await window.firebaseService.updateSession(sessionId, updates, userId);
     if (success) {
         lastSyncVersion++;
         console.log('✅ 数据同步成功');
@@ -248,7 +261,7 @@ async function shareCollaborativeSession() {
         }
         
         // 确保会话已创建
-        if (!sessionId || !await firebaseService.joinSession(sessionId, userId)) {
+        if (!sessionId || !await window.firebaseService.joinSession(sessionId, userId)) {
             await createNewCollaborativeSession();
         }
         
@@ -455,7 +468,7 @@ async function clearAllData() {
 
 // 页面卸载时清理
 window.addEventListener('beforeunload', () => {
-    firebaseService.unsubscribeFromSession();
+    window.firebaseService.unsubscribeFromSession();
 });
 
 // 导出函数供HTML调用
