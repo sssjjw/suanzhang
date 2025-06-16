@@ -3,6 +3,7 @@ let persons = [];
 let expenses = [];
 let currentStep = 1;
 let sessionId = null; // 当前会话ID
+let activityName = ''; // 当前活动名称
 
 // 会话管理
 function generateSessionId() {
@@ -151,10 +152,14 @@ function saveDataToStorage() {
         persons: persons,
         expenses: expenses,
         currentStep: currentStep,
+        activityName: activityName,
         timestamp: new Date().toISOString()
     };
     localStorage.setItem(getStorageKey(), JSON.stringify(data));
     updateDataStatus();
+    
+    // 同时保存到活动历史
+    saveToActivityHistory();
 }
 
 function updateDataStatus() {
@@ -177,6 +182,8 @@ function loadDataFromStorage() {
             persons = data.persons || [];
             expenses = data.expenses || [];
             currentStep = data.currentStep || 1;
+            activityName = data.activityName || '';
+            updateActivityTitle();
             return true;
         }
     } catch (error) {
@@ -190,7 +197,74 @@ function clearStoredData() {
     persons = [];
     expenses = [];
     currentStep = 1;
+    activityName = '';
+    updateActivityTitle();
     updateAllUI();
+}
+
+// 活动管理功能
+function saveToActivityHistory() {
+    if (!activityName || (persons.length === 0 && expenses.length === 0)) {
+        return; // 没有活动名称或数据时不保存历史
+    }
+    
+    try {
+        const historyKey = 'activityHistory';
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        
+        const activityData = {
+            id: sessionId,
+            name: activityName,
+            persons: persons,
+            expenses: expenses,
+            timestamp: new Date().toISOString(),
+            summary: generateActivitySummary()
+        };
+        
+        // 更新或添加活动
+        const existingIndex = history.findIndex(item => item.id === sessionId);
+        if (existingIndex >= 0) {
+            history[existingIndex] = activityData;
+        } else {
+            history.unshift(activityData); // 添加到开头
+        }
+        
+        // 限制历史记录数量（最多50个）
+        if (history.length > 50) {
+            history.splice(50);
+        }
+        
+        localStorage.setItem(historyKey, JSON.stringify(history));
+    } catch (error) {
+        console.error('保存活动历史失败:', error);
+    }
+}
+
+function generateActivitySummary() {
+    const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const familyGroups = [...new Set(persons.map(p => p.familyGroup))].length;
+    
+    return {
+        totalAmount: totalAmount,
+        personCount: persons.length,
+        familyCount: familyGroups,
+        expenseCount: expenses.length
+    };
+}
+
+function updateActivityTitle() {
+    const titleElement = document.querySelector('h1');
+    if (activityName) {
+        titleElement.innerHTML = `
+            <i class="fas fa-calculator text-blue-600"></i>
+            ${activityName} - 费用均摊
+        `;
+    } else {
+        titleElement.innerHTML = `
+            <i class="fas fa-calculator text-blue-600"></i>
+            智能费用均摊计算器
+        `;
+    }
 }
 
 // 分享功能
@@ -1176,9 +1250,36 @@ function showStorageManagerEasterEgg() {
 
 // 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSessionId = urlParams.get('s');
+    const urlData = urlParams.get('d');
+    
+    if (urlSessionId && urlData) {
+        // 从URL加载数据
+        const success = loadDataFromURL(urlSessionId, urlData);
+        if (success) {
+            updateAllUI();
+            return;
+        }
+    }
+    
     // 初始化会话
     initializeSession();
     
+    // 检查是否有现有数据
+    if (persons.length > 0 || expenses.length > 0) {
+        // 有数据时，正常显示步骤
+        initializeSteps();
+        return;
+    }
+    
+    // 没有数据时，显示欢迎弹窗
+    showWelcomeDialog();
+});
+
+// 初始化步骤状态
+function initializeSteps() {
     // 检查应该在哪一步
     if (persons.length > 0 && expenses.length > 0) {
         // 如果已经有人员和费用，直接到第三步
@@ -1195,7 +1296,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化标题彩蛋功能
     initTitleEasterEgg();
-    
+    setupEventListeners();
+}
+
+// 设置事件监听器
+function setupEventListeners() {
     // 添加回车键监听
     document.getElementById('personName').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -1208,7 +1313,194 @@ document.addEventListener('DOMContentLoaded', function() {
             addExpense();
         }
     });
-});
+}
+
+// 欢迎弹窗功能
+function showWelcomeDialog() {
+    // 隐藏主要内容
+    const mainContent = document.querySelector('.max-w-6xl');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
+    // 创建弹窗
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    overlay.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md mx-4 p-6 text-center">
+            <div class="mb-6">
+                <i class="fas fa-calculator text-6xl text-blue-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">智能费用均摊</h2>
+                <p class="text-gray-600">让聚餐、旅行、活动费用分摊变得简单</p>
+            </div>
+            
+            <div class="space-y-4">
+                <button onclick="startNewActivity()" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium">
+                    <i class="fas fa-plus mr-2"></i>
+                    新建活动
+                </button>
+                
+                <button onclick="showActivityHistory()" class="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors text-lg font-medium">
+                    <i class="fas fa-history mr-2"></i>
+                    查看历史活动
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+}
+
+// 开始新活动
+function startNewActivity() {
+    const activityNameInput = prompt('请输入活动名称：', '');
+    if (activityNameInput === null) {
+        return; // 用户取消
+    }
+    
+    if (!activityNameInput.trim()) {
+        alert('活动名称不能为空！');
+        startNewActivity(); // 重新输入
+        return;
+    }
+    
+    // 设置活动名称
+    activityName = activityNameInput.trim();
+    updateActivityTitle();
+    
+    // 移除欢迎弹窗
+    const overlay = document.querySelector('.fixed.inset-0');
+    if (overlay) {
+        overlay.remove();
+    }
+    
+    // 显示主要内容
+    const mainContent = document.querySelector('.max-w-6xl');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+    
+    // 初始化步骤
+    document.getElementById('step1').classList.add('step-active');
+    updateStepIndicator(1, 'active');
+    initTitleEasterEgg();
+    setupEventListeners();
+    
+    // 保存初始状态
+    saveDataToStorage();
+}
+
+// 显示历史活动
+function showActivityHistory() {
+    try {
+        const history = JSON.parse(localStorage.getItem('activityHistory') || '[]');
+        
+        if (history.length === 0) {
+            alert('暂无历史活动记录');
+            return;
+        }
+        
+        // 创建历史活动选择弹窗
+        const overlay = document.querySelector('.fixed.inset-0');
+        overlay.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl mx-4 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-history mr-2 text-blue-600"></i>
+                        历史活动
+                    </h2>
+                    <button onclick="closeActivityHistory()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    ${history.map(activity => `
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg text-gray-800 mb-1">${activity.name}</h3>
+                                    <div class="text-sm text-gray-600 mb-2">
+                                        <i class="fas fa-users mr-1"></i>${activity.summary.personCount}人 
+                                        <i class="fas fa-receipt ml-3 mr-1"></i>${activity.summary.expenseCount}笔费用
+                                        <i class="fas fa-yen-sign ml-3 mr-1"></i>￥${activity.summary.totalAmount.toFixed(2)}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        ${new Date(activity.timestamp).toLocaleString('zh-CN')}
+                                    </div>
+                                </div>
+                                <button onclick="loadActivity('${activity.id}')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                                    查看详情
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="startNewActivity()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        新建活动
+                    </button>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('加载历史活动失败:', error);
+        alert('加载历史活动失败，请重试');
+    }
+}
+
+// 关闭历史活动弹窗
+function closeActivityHistory() {
+    showWelcomeDialog();
+}
+
+// 加载指定活动
+function loadActivity(activityId) {
+    try {
+        const history = JSON.parse(localStorage.getItem('activityHistory') || '[]');
+        const activity = history.find(item => item.id === activityId);
+        
+        if (!activity) {
+            alert('活动数据不存在');
+            return;
+        }
+        
+        // 设置会话ID和数据
+        sessionId = activityId;
+        persons = activity.persons || [];
+        expenses = activity.expenses || [];
+        activityName = activity.name || '';
+        
+        // 更新URL
+        const newUrl = `${window.location.pathname}?s=${sessionId}`;
+        window.history.pushState({}, '', newUrl);
+        
+        // 移除弹窗
+        const overlay = document.querySelector('.fixed.inset-0');
+        if (overlay) {
+            overlay.remove();
+        }
+        
+        // 显示主要内容
+        const mainContent = document.querySelector('.max-w-6xl');
+        if (mainContent) {
+            mainContent.style.display = 'block';
+        }
+        
+        // 更新标题和UI
+        updateActivityTitle();
+        initializeSteps();
+        updateAllUI();
+        
+    } catch (error) {
+        console.error('加载活动失败:', error);
+        alert('加载活动失败，请重试');
+    }
+}
 
 // 创建新会话
 function createNewSession() {
