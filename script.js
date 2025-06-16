@@ -357,8 +357,8 @@ function generateShareableLink() {
         const compressedStr = simpleCompress(jsonStr);
         console.log('压缩后长度:', compressedStr.length);
         
-        // 使用URL安全的base64编码
-        const encodedData = btoa(compressedStr)
+        // 使用URL安全的base64编码（支持中文字符）
+        const encodedData = btoa(unescape(encodeURIComponent(compressedStr)))
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=/g, ''); // 去掉padding
@@ -383,7 +383,7 @@ function generateShareableLink() {
             
             const minimalJson = JSON.stringify(minimalData);
             const minimalCompressed = simpleCompress(minimalJson);
-            const minimalEncoded = btoa(minimalCompressed)
+            const minimalEncoded = btoa(unescape(encodeURIComponent(minimalCompressed)))
                 .replace(/\+/g, '-')
                 .replace(/\//g, '_')
                 .replace(/=/g, '');
@@ -413,7 +413,7 @@ function generateShareableLink() {
             };
             
             const emergencyJson = JSON.stringify(emergencyData);
-            const emergencyEncoded = btoa(emergencyJson).replace(/[+/=]/g, '');
+            const emergencyEncoded = btoa(unescape(encodeURIComponent(emergencyJson))).replace(/[+/=]/g, '');
             const emergencyUrl = `${window.location.origin}${window.location.pathname}?s=${sessionId}&d=${emergencyEncoded}`;
             
             console.log('使用应急分享链接:', emergencyUrl);
@@ -452,7 +452,7 @@ function loadDataFromURL() {
             }
             
             console.log('base64解码前长度:', base64Str.length);
-            const compressedStr = atob(base64Str);
+            const compressedStr = decodeURIComponent(escape(atob(base64Str)));
             console.log('base64解码后长度:', compressedStr.length);
             
             const decompressedStr = simpleDecompress(compressedStr);
