@@ -1552,17 +1552,14 @@ function showActivityHistory() {
 
 // 关闭历史活动弹窗
 function closeActivityHistory() {
-    // 移除历史活动弹窗
+    // 移除当前弹窗
     const overlay = document.querySelector('.fixed.inset-0');
     if (overlay) {
         overlay.remove();
     }
     
-    // 显示主要内容
-    const mainContent = document.querySelector('.max-w-6xl');
-    if (mainContent) {
-        mainContent.style.display = 'block';
-    }
+    // 回到欢迎弹窗
+    showWelcomeDialog();
 }
 
 // 加载指定活动
