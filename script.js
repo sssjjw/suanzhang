@@ -281,7 +281,8 @@ function compressDataForSharing() {
             p: expense.payerId,
             a: expense.amount,
             d: expense.description
-        }))
+        })),
+        an: activityName || '' // 活动名称
     };
     return compactData;
 }
@@ -298,7 +299,8 @@ function decompressSharedData(compactData) {
             payerId: e.p,
             amount: e.a,
             description: e.d
-        })) || []
+        })) || [],
+        activityName: compactData.an || ''
     };
 }
 
@@ -312,6 +314,7 @@ function simpleCompress(str) {
         .replace(/"payerId":/g, '"p":')
         .replace(/"amount":/g, '"a":')
         .replace(/"description":/g, '"d":')
+        .replace(/"activityName":/g, '"an":')
         .replace(/,"/g, ',"')
         .replace(/":"/g, '":"');
 }
@@ -324,7 +327,8 @@ function simpleDecompress(str) {
         .replace(/"f":/g, '"familyGroup":')
         .replace(/"p":/g, '"payerId":')
         .replace(/"a":/g, '"amount":')
-        .replace(/"d":/g, '"description":');
+        .replace(/"d":/g, '"description":')
+        .replace(/"an":/g, '"activityName":');
 }
 
 function generateShareableLink() {
@@ -389,6 +393,8 @@ function loadDataFromURL() {
             if (decodedData.persons && decodedData.expenses) {
                 persons = decodedData.persons;
                 expenses = decodedData.expenses;
+                activityName = decodedData.activityName || '';
+                updateActivityTitle();
                 updateAllUI();
                 return true;
             }
@@ -405,6 +411,8 @@ function loadDataFromURL() {
             if (decodedData.persons && decodedData.expenses) {
                 persons = decodedData.persons;
                 expenses = decodedData.expenses;
+                activityName = decodedData.activityName || '';
+                updateActivityTitle();
                 updateAllUI();
                 return true;
             }
@@ -1278,9 +1286,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (urlSessionId && urlData) {
         // 从URL加载数据
-        const success = loadDataFromURL(urlSessionId, urlData);
+        sessionId = urlSessionId; // 设置会话ID
+        const success = loadDataFromURL();
         if (success) {
             updateAllUI();
+            initializeSteps();
             return;
         }
     }
