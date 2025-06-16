@@ -369,10 +369,12 @@ function generateShareableLink() {
 }
 
 function loadDataFromURL() {
+    console.log('开始从URL加载数据...');
     const urlParams = new URLSearchParams(window.location.search);
     
     // 尝试新格式 (压缩格式)
     let encodedData = urlParams.get('d');
+    console.log('获取到的编码数据长度:', encodedData ? encodedData.length : 0);
     if (encodedData) {
         try {
             // 还原URL安全的base64编码
@@ -389,8 +391,14 @@ function loadDataFromURL() {
             const decompressedStr = simpleDecompress(compressedStr);
             const compactData = JSON.parse(decompressedStr);
             const decodedData = decompressSharedData(compactData);
+            console.log('解压缩分享数据:', decodedData);
             
             if (decodedData.persons && decodedData.expenses) {
+                console.log('成功解析分享数据:', { 
+                    persons: decodedData.persons.length, 
+                    expenses: decodedData.expenses.length, 
+                    activityName: decodedData.activityName 
+                });
                 persons = decodedData.persons;
                 expenses = decodedData.expenses;
                 activityName = decodedData.activityName || '';
@@ -408,7 +416,13 @@ function loadDataFromURL() {
     if (encodedData) {
         try {
             const decodedData = JSON.parse(decodeURIComponent(atob(encodedData)));
+            console.log('解析旧格式分享数据:', decodedData);
             if (decodedData.persons && decodedData.expenses) {
+                console.log('成功解析旧格式分享数据:', { 
+                    persons: decodedData.persons.length, 
+                    expenses: decodedData.expenses.length, 
+                    activityName: decodedData.activityName 
+                });
                 persons = decodedData.persons;
                 expenses = decodedData.expenses;
                 activityName = decodedData.activityName || '';
@@ -421,6 +435,7 @@ function loadDataFromURL() {
         }
     }
     
+    console.log('URL数据加载失败，没有找到有效数据');
     return false;
 }
 
@@ -1285,13 +1300,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlData = urlParams.get('d');
     
     if (urlSessionId && urlData) {
+        console.log('检测到分享链接参数:', { sessionId: urlSessionId, data: urlData.substring(0, 50) + '...' });
         // 从URL加载数据
         sessionId = urlSessionId; // 设置会话ID
         const success = loadDataFromURL();
+        console.log('URL数据加载结果:', success);
         if (success) {
+            console.log('URL数据加载成功，显示主界面');
             updateAllUI();
             initializeSteps();
             return;
+        } else {
+            console.log('URL数据加载失败，继续正常初始化流程');
         }
     }
     
@@ -1311,6 +1331,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 初始化步骤状态
 function initializeSteps() {
+    // 确保主要内容区域是显示的
+    const mainContent = document.querySelector('.max-w-6xl');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+    
+    // 移除可能存在的弹窗
+    const overlay = document.querySelector('.fixed.inset-0');
+    if (overlay) {
+        overlay.remove();
+    }
+    
     // 检查应该在哪一步
     if (persons.length > 0 && expenses.length > 0) {
         // 如果已经有人员和费用，直接到第三步
